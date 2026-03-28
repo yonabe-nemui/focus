@@ -4,6 +4,7 @@ import app.focus.personal.db.FocusDatabase
 import app.focus.personal.model.RssFeed
 import app.focus.personal.model.RssItem
 import app.focus.personal.network.YahooRssClient
+import app.focus.personal.util.DateUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -42,6 +43,7 @@ class RssRepository(
                     link = item.link,
                     description = item.description ?: "",
                     pubDate = item.pubDate ?: "",
+                    pubDateMillis = DateUtils.parseRfc822ToMillis(item.pubDate),
                     guid = item.guid ?: ""
                 )
             }

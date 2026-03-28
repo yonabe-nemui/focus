@@ -13,6 +13,7 @@ CREATE TABLE RssItemEntity (
     link TEXT NOT NULL,
     description TEXT,
     pubDate TEXT,
+    pubDateMillis INTEGER,
     guid TEXT,
     FOREIGN KEY (channelId) REFERENCES RssChannelEntity(id) ON DELETE CASCADE
 );
@@ -26,21 +27,21 @@ lastInsertedId:
 SELECT last_insert_rowid();
 
 insertItem:
-INSERT INTO RssItemEntity(channelId, title, link, description, pubDate, guid)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO RssItemEntity(channelId, title, link, description, pubDate, pubDateMillis, guid)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 selectAllChannelsByCategory:
 SELECT * FROM RssChannelEntity WHERE category = ?;
 
 selectItemsByChannelId:
-SELECT * FROM RssItemEntity WHERE channelId = ?;
+SELECT * FROM RssItemEntity WHERE channelId = ? ORDER BY pubDateMillis DESC;
 
--- カテゴリに紐づくアイテムを最新順（ID降順）でページング取得
+-- カテゴリに紐づくアイテムを最新順（pubDateMillis降順）でページング取得
 selectPagedItemsByCategory:
 SELECT item.* FROM RssItemEntity AS item
 JOIN RssChannelEntity AS channel ON item.channelId = channel.id
 WHERE channel.category = ?
-ORDER BY item.id DESC
+ORDER BY item.pubDateMillis DESC
 LIMIT ? OFFSET ?;
 
 deleteChannelByCategory:

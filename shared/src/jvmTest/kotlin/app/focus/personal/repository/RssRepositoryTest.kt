@@ -25,8 +25,14 @@ class RssRepositoryTest {
             <link>link</link>
             <description>desc</description>
             <item>
-              <title>News 1</title>
+              <title>News 1 (Older)</title>
               <link>link1</link>
+              <pubDate>Fri, 28 Mar 2025 15:45:00 +0900</pubDate>
+            </item>
+            <item>
+              <title>News 2 (Newer)</title>
+              <link>link2</link>
+              <pubDate>Fri, 28 Mar 2025 15:46:00 +0900</pubDate>
             </item>
           </channel>
         </rss>
@@ -40,7 +46,7 @@ class RssRepositoryTest {
     }
 
     @Test
-    fun testRefreshAndGetItems() = runTest {
+    fun testRefreshAndGetItemsSorted() = runTest {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = mockXml,
@@ -57,8 +63,9 @@ class RssRepositoryTest {
         // DBから取得
         val items = repository.getItemsByCategory("topic").first()
 
-        assertEquals(1, items.size)
-        assertEquals("News 1", items[0].title)
-        assertEquals("link1", items[0].link)
+        assertEquals(2, items.size)
+        // 最新順（News 2 -> News 1）になっていることを確認
+        assertEquals("News 2 (Newer)", items[0].title)
+        assertEquals("News 1 (Older)", items[1].title)
     }
 }

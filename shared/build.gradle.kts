@@ -33,6 +33,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.serialization.core)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.xmlutil.serialization)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
