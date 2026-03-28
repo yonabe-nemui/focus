@@ -28,6 +28,10 @@ class YahooRssClient(private val client: HttpClient) {
     private suspend fun fetchAndParse(url: String): RssFeed {
         val response = client.get(url)
         val body = response.bodyAsText()
-        return xml.decodeFromString(RssFeed.serializer(), body)
+        println("DEBUG: RSS Response Body: ${body.take(500)}...") // 最初の500文字
+        val feed = xml.decodeFromString(RssFeed.serializer(), body)
+        println("DEBUG: Parsed Feed Channel Title: '${feed.channel.title}'")
+        println("DEBUG: Parsed Feed Items Count: ${feed.channel.items.size}")
+        return feed
     }
 }
