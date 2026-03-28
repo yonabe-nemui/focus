@@ -2,6 +2,7 @@ package app.focus.personal.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import app.focus.personal.db.FocusDatabase
+import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.YahooRssClient
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -54,8 +55,10 @@ class RssRepositoryTest {
                 headers = headersOf(HttpHeaders.ContentType, "application/xml")
             )
         }
-        val api = YahooRssClient(HttpClient(mockEngine))
-        val repository = RssRepository(database, api)
+        val client = HttpClient(mockEngine)
+        val yahooApi = YahooRssClient(client)
+        val googleApi = GoogleRssClient(client)
+        val repository = RssRepository(database, yahooApi, googleApi)
 
         // データの取得と保存を実行
         repository.refreshTopics("top-picks")

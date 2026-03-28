@@ -5,6 +5,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.ComposeUIViewController
 import app.focus.personal.db.DriverFactory
 import app.focus.personal.db.FocusDatabase
+import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.YahooRssClient
 import app.focus.personal.repository.RssRepository
 import app.focus.personal.viewmodel.RssViewModel
@@ -17,8 +18,9 @@ fun MainViewController() = ComposeUIViewController {
         val driver = DriverFactory().createDriver()
         val database = FocusDatabase(driver)
         val client = HttpClient(Darwin)
-        val api = YahooRssClient(client)
-        val repository = RssRepository(database, api)
+        val yahooApi = YahooRssClient(client)
+        val googleApi = GoogleRssClient(client)
+        val repository = RssRepository(database, yahooApi, googleApi)
         RssViewModel(repository, scope)
     }
 
