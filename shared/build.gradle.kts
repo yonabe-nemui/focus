@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -17,19 +19,42 @@ kotlin {
     iosSimulatorArm64()
     
     jvm()
-    
+
     js {
         browser()
     }
-    
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
-    }
-    
+
+    // SQLDelight 2.0.x does not support WasmJs yet.
+    // @OptIn(ExperimentalWasmDsl::class)
+    // wasmJs {
+    //     browser()
+    // }
+
     sourceSets {
         commonMain.dependencies {
-            // put your Multiplatform dependencies here
+            implementation(libs.kotlinx.serialization.core)
+            implementation(libs.xmlutil.serialization)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.sqldelight.runtime)
+        }
+        androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.sqldelight.android.driver)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+            implementation(libs.sqldelight.native.driver)
+        }
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.sqldelight.sqlite.driver)
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+                implementation(libs.sqldelight.web.worker.driver)
+            }
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -46,5 +71,13 @@ android {
     }
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
+    }
+}
+
+sqldelight {
+    databases {
+        create("FocusDatabase") {
+            packageName.set("app.focus.personal.db")
+        }
     }
 }

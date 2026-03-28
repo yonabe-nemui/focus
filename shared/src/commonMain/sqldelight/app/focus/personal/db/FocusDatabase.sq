@@ -1,0 +1,39 @@
+CREATE TABLE RssChannelEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    link TEXT NOT NULL,
+    description TEXT NOT NULL,
+    category TEXT NOT NULL -- 'topic' or 'category'
+);
+
+CREATE TABLE RssItemEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channelId INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    link TEXT NOT NULL,
+    description TEXT,
+    pubDate TEXT,
+    guid TEXT,
+    FOREIGN KEY (channelId) REFERENCES RssChannelEntity(id) ON DELETE CASCADE
+);
+
+-- Queries
+insertChannel:
+INSERT INTO RssChannelEntity(title, link, description, category)
+VALUES (?, ?, ?, ?);
+
+lastInsertedId:
+SELECT last_insert_rowid();
+
+insertItem:
+INSERT INTO RssItemEntity(channelId, title, link, description, pubDate, guid)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectAllChannelsByCategory:
+SELECT * FROM RssChannelEntity WHERE category = ?;
+
+selectItemsByChannelId:
+SELECT * FROM RssItemEntity WHERE channelId = ?;
+
+deleteChannelByCategory:
+DELETE FROM RssChannelEntity WHERE category = ?;
