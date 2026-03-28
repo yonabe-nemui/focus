@@ -1,25 +1,42 @@
 package app.focus.personal
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import app.focus.personal.db.DriverFactory
+import app.focus.personal.db.FocusDatabase
+import app.focus.personal.network.YahooRssClient
+import app.focus.personal.repository.RssRepository
+import app.focus.personal.viewmodel.RssViewModel
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         setContent {
-            App()
+            val scope = rememberCoroutineScope()
+            val viewModel = remember {
+                val driver = DriverFactory(this@MainActivity).createDriver()
+                val database = FocusDatabase(driver)
+                val client = HttpClient(OkHttp)
+                val api = YahooRssClient(client)
+                val repository = RssRepository(database, api)
+                RssViewModel(repository, scope)
+            }
+
+            App(
+                viewModel = viewModel,
+                onLinkClick = { url ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    startActivity(intent)
+                }
+            )
         }
     }
-}
-
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    App()
 }
