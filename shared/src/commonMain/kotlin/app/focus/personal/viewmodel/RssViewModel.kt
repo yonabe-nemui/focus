@@ -31,10 +31,8 @@ class RssViewModel(
         scope.launch(Dispatchers.Default) {
             _uiState.value = RssUiState.Loading
             try {
-                repository.refreshTopics(category)
-                repository.getItemsByCategory("topic").collectLatest { items ->
-                    _uiState.value = RssUiState.Success(items)
-                }
+                val items = repository.fetchTopics(category)
+                _uiState.value = RssUiState.Success(items)
             } catch (e: Exception) {
                 _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
             }
@@ -45,10 +43,8 @@ class RssViewModel(
         scope.launch(Dispatchers.Default) {
             _uiState.value = RssUiState.Loading
             try {
-                repository.refreshCategory(category)
-                repository.getItemsByCategory("category").collectLatest { items ->
-                    _uiState.value = RssUiState.Success(items)
-                }
+                val items = repository.fetchCategory(category)
+                _uiState.value = RssUiState.Success(items)
             } catch (e: Exception) {
                 _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
             }

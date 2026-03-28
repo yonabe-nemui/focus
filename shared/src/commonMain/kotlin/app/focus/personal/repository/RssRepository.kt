@@ -19,9 +19,19 @@ class RssRepository(
         saveFeed(feed, "topic")
     }
 
+    suspend fun fetchTopics(category: String = "top-picks"): List<RssItem> {
+        val feed = api.fetchTopicRss(category)
+        return feed.channel.items.sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
+    }
+
     suspend fun refreshCategory(category: String) {
         val feed = api.fetchCategoryRss(category)
         saveFeed(feed, "category")
+    }
+
+    suspend fun fetchCategory(category: String): List<RssItem> {
+        val feed = api.fetchCategoryRss(category)
+        return feed.channel.items.sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
     }
 
     private fun saveFeed(feed: RssFeed, dbCategory: String) {
