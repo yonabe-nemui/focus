@@ -31,3 +31,26 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Kotlin Multiplatform
+.kotlin/
+.konan/
+
+# iOS / Xcode
+iosApp/DerivedData/
+iosApp/*.xcodeproj/xcuserdata/
+iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
+iosApp/*.xcworkspace/xcuserdata/
+iosApp/*.xcworkspace/xcshareddata/SwiftPM/
+iosApp/xcuserdata/
+iosApp/.idea/
+.apple_flavour
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Web / JS
+node_modules/
+dist/
+.kotlin-js-store/
