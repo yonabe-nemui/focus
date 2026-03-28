@@ -5,12 +5,14 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import nl.adaptivity.xmlutil.serialization.XML
+import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 
 class YahooRssClient(private val client: HttpClient) {
     private val xml = XML {
         autoPolymorphic = true
-        // XMLUtil の戻り値の型に合わせて emptyList() を返すように修正
-        unknownChildHandler = { _, _, _, _, _ -> emptyList() } 
+        policy = DefaultXmlSerializationPolicy {
+            ignoreUnknownChildren()
+        }
     }
 
     suspend fun fetchTopicRss(category: String = "top-picks"): RssFeed {

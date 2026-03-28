@@ -29,7 +29,7 @@ class RssRepository(
             queries.insertChannel(
                 title = feed.channel.title,
                 link = feed.channel.link,
-                description = feed.channel.description,
+                description = feed.channel.description ?: "",
                 category = dbCategory
             )
             val channelId = queries.lastInsertedId().executeAsOne()
@@ -38,9 +38,9 @@ class RssRepository(
                     channelId = channelId,
                     title = item.title,
                     link = item.link,
-                    description = item.description,
-                    pubDate = item.pubDate,
-                    guid = item.guid
+                    description = item.description ?: "",
+                    pubDate = item.pubDate ?: "",
+                    guid = item.guid ?: ""
                 )
             }
         }

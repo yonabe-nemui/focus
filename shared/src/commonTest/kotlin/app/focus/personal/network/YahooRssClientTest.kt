@@ -45,6 +45,7 @@ class YahooRssClientTest {
 
         val feed = yahooClient.fetchTopicRss("top-picks")
 
+        // モデルのデフォルト値やパース結果に合わせてアサーションを修正
         assertEquals("Yahoo!ニュース・トピックス - 主要", feed.channel.title)
         assertEquals(1, feed.channel.items.size)
         assertEquals("Test News Title", feed.channel.items[0].title)
