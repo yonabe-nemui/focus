@@ -35,5 +35,13 @@ SELECT * FROM RssChannelEntity WHERE category = ?;
 selectItemsByChannelId:
 SELECT * FROM RssItemEntity WHERE channelId = ?;
 
+-- カテゴリに紐づくアイテムを最新順（ID降順）でページング取得
+selectPagedItemsByCategory:
+SELECT item.* FROM RssItemEntity AS item
+JOIN RssChannelEntity AS channel ON item.channelId = channel.id
+WHERE channel.category = ?
+ORDER BY item.id DESC
+LIMIT ? OFFSET ?;
+
 deleteChannelByCategory:
 DELETE FROM RssChannelEntity WHERE category = ?;

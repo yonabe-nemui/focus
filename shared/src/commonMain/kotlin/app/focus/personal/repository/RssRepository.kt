@@ -8,10 +8,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 class RssRepository(
-    private val database: FocusDatabase,
+    private val database: FocusDatabase?,
     private val api: YahooRssClient
 ) {
-    private val queries = database.focusDatabaseQueries
+    private val queries = database?.focusDatabaseQueries
 
     suspend fun refreshTopics(category: String = "top-picks") {
         val feed = api.fetchTopicRss(category)
@@ -24,17 +24,19 @@ class RssRepository(
     }
 
     private fun saveFeed(feed: RssFeed, dbCategory: String) {
-        database.transaction {
-            queries.deleteChannelByCategory(dbCategory)
-            queries.insertChannel(
+        val db = database ?: return
+        val q = queries ?: return
+        db.transaction {
+            q.deleteChannelByCategory(dbCategory)
+            q.insertChannel(
                 title = feed.channel.title,
                 link = feed.channel.link,
                 description = feed.channel.description ?: "",
                 category = dbCategory
             )
-            val channelId = queries.lastInsertedId().executeAsOne()
+            val channelId = q.lastInsertedId().executeAsOne()
             feed.channel.items.forEach { item ->
-                queries.insertItem(
+                q.insertItem(
                     channelId = channelId,
                     title = item.title,
                     link = item.link,
@@ -46,10 +48,37 @@ class RssRepository(
         }
     }
 
+    fun getPagedItemsByCategory(
+        dbCategory: String,
+        limit: Long = 20,
+        offset: Long = 0
+    ): Flow<List<RssItem>> = flow {
+        val q = queries
+        if (q == null) {
+            emit(emptyList())
+            return@flow
+        }
+        val items = q.selectPagedItemsByCategory(dbCategory, limit, offset).executeAsList().map { entity ->
+            RssItem(
+                title = entity.title,
+                link = entity.link,
+                description = entity.description,
+                pubDate = entity.pubDate,
+                guid = entity.guid
+            )
+        }
+        emit(items)
+    }
+
     fun getItemsByCategory(dbCategory: String): Flow<List<RssItem>> = flow {
-        val channel = queries.selectAllChannelsByCategory(dbCategory).executeAsOneOrNull()
+        val q = queries
+        if (q == null) {
+            emit(emptyList())
+            return@flow
+        }
+        val channel = q.selectAllChannelsByCategory(dbCategory).executeAsOneOrNull()
         if (channel != null) {
-            val items = queries.selectItemsByChannelId(channel.id).executeAsList().map { entity ->
+            val items = q.selectItemsByChannelId(channel.id).executeAsList().map { entity ->
                 RssItem(
                     title = entity.title,
                     link = entity.link,

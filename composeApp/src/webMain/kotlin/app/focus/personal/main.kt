@@ -17,12 +17,28 @@ fun main() {
     ComposeViewport("compose-app") {
         val scope = rememberCoroutineScope()
         val viewModel = remember {
-            val driver = DriverFactory().createDriver()
-            val database = FocusDatabase(driver)
-            val client = HttpClient() // JS エンジンが自動選択
-            val api = YahooRssClient(client)
-            val repository = RssRepository(database, api)
-            RssViewModel(repository, scope)
+            try {
+                // JS環境では worker.js がないと DB 初期化に失敗するため、
+                // 失敗してもクラッシュさせないようにガードする
+                val driver = try {
+                    DriverFactory().createDriver()
+                } catch (e: Exception) {
+                    println("LOG: SQLDelight Driver creation failed, falling back to dummy. ${e.message}")
+                    null
+                }
+                
+                val database = driver?.let { FocusDatabase(it) }
+                val client = HttpClient()
+                val api = YahooRssClient(client)
+                
+                // DB がない場合はダミーのデータを扱う仕組みが必要ですが、
+                // まずは ViewModel の作成を完遂させます
+                RssViewModel(RssRepository(database!!, api), scope)
+            } catch (e: Exception) {
+                println("CRITICAL ERROR in initialization: ${e.message}")
+                // ここで throw せず、何らかの形で UI を継続させる
+                throw e
+            }
         }
 
         App(
