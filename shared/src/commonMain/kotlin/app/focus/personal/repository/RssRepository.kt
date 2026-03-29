@@ -1,10 +1,8 @@
 package app.focus.personal.repository
 
 import app.focus.personal.db.FocusDatabase
-import app.focus.personal.model.HatenaRdf
-import app.focus.personal.model.RssFeed
-import app.focus.personal.model.RssItem
-import app.focus.personal.model.toRssItem
+import app.focus.personal.model.*
+import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.util.DateUtils
@@ -17,7 +15,8 @@ import kotlinx.coroutines.flow.flow
 class RssRepository(
     private val database: FocusDatabase?,
     private val googleApi: GoogleRssClient,
-    private val hatenaApi: HatenaRssClient
+    private val hatenaApi: HatenaRssClient,
+    private val blueskyApi: BlueskyClient
 ) {
     private val queries = database?.focusDatabaseQueries
 
@@ -77,6 +76,41 @@ class RssRepository(
         awaitAll(deferredHot, deferredNew, deferredIt)
             .flatten()
             .distinctBy { it.link }
+            .map { it.toRssItem() }
+            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+    }
+
+    suspend fun loginBluesky(handle: String, appPassword: String): BlueskySession {
+        return blueskyApi.createSession(handle, appPassword)
+    }
+
+    suspend fun getBlueskyMutedWords(session: BlueskySession): List<MutedWord> {
+        return try {
+            blueskyApi.getMutedWords(session)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun fetchBlueskyEntries(
+        query: String, 
+        session: BlueskySession? = null,
+        mutedWords: List<MutedWord> = emptyList()
+    ): List<RssItem> {
+        val response = try {
+            blueskyApi.searchPosts(query, session = session)
+        } catch (e: Exception) {
+            BlueskySearchResponse(emptyList())
+        }
+        
+        return response.posts
+            .filter { post ->
+                // 「見たくないものは見ない」フィルタリング
+                val text = post.record.text.lowercase()
+                mutedWords.none { word -> 
+                    word.value.lowercase().isNotEmpty() && text.contains(word.value.lowercase())
+                }
+            }
             .map { it.toRssItem() }
             .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
     }
