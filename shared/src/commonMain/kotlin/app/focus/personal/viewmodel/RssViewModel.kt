@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 sealed class RssUiState {
@@ -16,7 +15,7 @@ sealed class RssUiState {
     data class Error(val message: String) : RssUiState()
 }
 
-enum class RssSource { YAHOO, GOOGLE, HATENA }
+enum class RssSource { GOOGLE, HATENA }
 
 class RssViewModel(
     private val repository: RssRepository,
@@ -28,11 +27,10 @@ class RssViewModel(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    private val _currentSource = MutableStateFlow(RssSource.YAHOO)
+    private val _currentSource = MutableStateFlow(RssSource.GOOGLE)
     val currentSource: StateFlow<RssSource> = _currentSource.asStateFlow()
 
     // メモリ上のキャッシュリスト
-    private var yahooItems = listOf<RssItem>()
     private var googleItems = listOf<RssItem>()
     private var hatenaItems = listOf<RssItem>()
 
@@ -45,7 +43,6 @@ class RssViewModel(
         _currentSource.value = source
         
         val cachedItems = when (source) {
-            RssSource.YAHOO -> yahooItems
             RssSource.GOOGLE -> googleItems
             RssSource.HATENA -> hatenaItems
         }
@@ -63,7 +60,6 @@ class RssViewModel(
             try {
                 val source = _currentSource.value
                 val newItems = when (source) {
-                    RssSource.YAHOO -> repository.fetchAllTopics()
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
                 }
@@ -80,7 +76,6 @@ class RssViewModel(
             try {
                 val source = _currentSource.value
                 val newItems = when (source) {
-                    RssSource.YAHOO -> repository.fetchAllTopics()
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
                 }
@@ -95,7 +90,6 @@ class RssViewModel(
 
     private fun updateList(newItems: List<RssItem>, source: RssSource) {
         val currentItems = when (source) {
-            RssSource.YAHOO -> yahooItems
             RssSource.GOOGLE -> googleItems
             RssSource.HATENA -> hatenaItems
         }
@@ -112,37 +106,12 @@ class RssViewModel(
             }
         
         when (source) {
-            RssSource.YAHOO -> yahooItems = merged
             RssSource.GOOGLE -> googleItems = merged
             RssSource.HATENA -> hatenaItems = merged
         }
 
         if (_currentSource.value == source) {
             _uiState.value = RssUiState.Success(merged)
-        }
-    }
-
-    fun loadTopics(category: String = "top-picks") {
-        scope.launch(Dispatchers.Default) {
-            _uiState.value = RssUiState.Loading
-            try {
-                val items = repository.fetchTopics(category)
-                _uiState.value = RssUiState.Success(items)
-            } catch (e: Exception) {
-                _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
-            }
-        }
-    }
-
-    fun loadCategory(category: String) {
-        scope.launch(Dispatchers.Default) {
-            _uiState.value = RssUiState.Loading
-            try {
-                val items = repository.fetchCategory(category)
-                _uiState.value = RssUiState.Success(items)
-            } catch (e: Exception) {
-                _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
-            }
         }
     }
 }

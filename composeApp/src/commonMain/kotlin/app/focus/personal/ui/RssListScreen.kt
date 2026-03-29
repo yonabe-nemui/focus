@@ -41,11 +41,6 @@ fun RssListScreen(
                 TopAppBar(title = { Text("News Feed") })
                 TabRow(selectedTabIndex = currentSource.ordinal) {
                     Tab(
-                        selected = currentSource == RssSource.YAHOO,
-                        onClick = { viewModel.setSource(RssSource.YAHOO) },
-                        text = { Text("Yahoo!") }
-                    )
-                    Tab(
                         selected = currentSource == RssSource.GOOGLE,
                         onClick = { viewModel.setSource(RssSource.GOOGLE) },
                         text = { Text("Google") }

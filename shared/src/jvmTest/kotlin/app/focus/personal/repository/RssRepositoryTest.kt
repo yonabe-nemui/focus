@@ -3,7 +3,7 @@ package app.focus.personal.repository
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.GoogleRssClient
-import app.focus.personal.network.YahooRssClient
+import app.focus.personal.network.HatenaRssClient
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -47,7 +47,7 @@ class RssRepositoryTest {
     }
 
     @Test
-    fun testRefreshAndGetItemsSorted() = runTest {
+    fun testFetchAllGoogleTopics() = runTest {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = mockXml,
@@ -56,17 +56,15 @@ class RssRepositoryTest {
             )
         }
         val client = HttpClient(mockEngine)
-        val yahooApi = YahooRssClient(client)
         val googleApi = GoogleRssClient(client)
-        val repository = RssRepository(database, yahooApi, googleApi)
+        val hatenaApi = HatenaRssClient(client)
+        val repository = RssRepository(database, googleApi, hatenaApi)
 
-        // データの取得と保存を実行
-        repository.refreshTopics("top-picks")
+        // データの取得を実行
+        val items = repository.fetchAllGoogleTopics()
 
-        // DBから取得
-        val items = repository.getItemsByCategory("topic").first()
-
-        assertEquals(2, items.size)
+        // 9 categories (1 top stories + 8 topics) * 2 items per response = 18 items
+        assertEquals(18, items.size)
         // 最新順（News 2 -> News 1）になっていることを確認
         assertEquals("News 2 (Newer)", items[0].title)
         assertEquals("News 1 (Older)", items[1].title)

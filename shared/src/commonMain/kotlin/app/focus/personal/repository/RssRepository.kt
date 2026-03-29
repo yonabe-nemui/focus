@@ -7,7 +7,6 @@ import app.focus.personal.model.RssItem
 import app.focus.personal.model.toRssItem
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
-import app.focus.personal.network.YahooRssClient
 import app.focus.personal.util.DateUtils
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,48 +16,15 @@ import kotlinx.coroutines.flow.flow
 
 class RssRepository(
     private val database: FocusDatabase?,
-    private val yahooApi: YahooRssClient,
     private val googleApi: GoogleRssClient,
     private val hatenaApi: HatenaRssClient
 ) {
     private val queries = database?.focusDatabaseQueries
 
-    private val yahooCategories = listOf(
-        "top-picks", "domestic", "world", "business", 
-        "entertainment", "sports", "it", "science", "local"
-    )
-
     private val googleTopics = listOf(
         "WORLD", "NATION", "BUSINESS", "TECHNOLOGY", 
         "ENTERTAINMENT", "SPORTS", "SCIENCE", "HEALTH"
     )
-
-    suspend fun refreshTopics(category: String = "top-picks") {
-        val feed = yahooApi.fetchTopicRss(category)
-        saveFeed(feed, "topic")
-    }
-
-    suspend fun fetchTopics(category: String = "top-picks"): List<RssItem> {
-        val feed = yahooApi.fetchTopicRss(category)
-        return feed.channel.items.sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
-    }
-
-    suspend fun fetchAllTopics(): List<RssItem> = coroutineScope {
-        val deferredFeeds = yahooCategories.map { category ->
-            async { 
-                try {
-                    yahooApi.fetchTopicRss(category).channel.items
-                } catch (e: Exception) {
-                    emptyList<RssItem>()
-                }
-            }
-        }
-        
-        deferredFeeds.awaitAll()
-            .flatten()
-            .distinctBy { it.guid ?: it.link }
-            .sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
-    }
 
     suspend fun fetchAllGoogleTopics(): List<RssItem> = coroutineScope {
         val deferredTop = async {
@@ -113,16 +79,6 @@ class RssRepository(
             .distinctBy { it.link }
             .map { it.toRssItem() }
             .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
-    }
-
-    suspend fun refreshCategory(category: String) {
-        val feed = yahooApi.fetchCategoryRss(category)
-        saveFeed(feed, "category")
-    }
-
-    suspend fun fetchCategory(category: String): List<RssItem> {
-        val feed = yahooApi.fetchCategoryRss(category)
-        return feed.channel.items.sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
     }
 
     private fun saveFeed(feed: RssFeed, dbCategory: String) {
