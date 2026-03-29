@@ -1,6 +1,6 @@
 package app.focus.personal.util
 
-import kotlin.time.Instant
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -9,11 +9,26 @@ object DateUtils {
     private val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
     /**
+     * Parses ISO 8601 date string (e.g., "2026-03-29T21:44:02+09:00") to epoch millis.
+     * Returns 0 if parsing fails.
+     */
+    fun parseIso8601ToMillis(dateString: String?): Long {
+        if (dateString == null) return 0
+        return try {
+            Instant.parse(dateString).toEpochMilliseconds()
+        } catch (e: Exception) {
+            println("Error parsing ISO 8601 date: $dateString, ${e.message}")
+            0
+        }
+    }
+
+    /**
      * Parses RFC 822 date string (e.g., "Fri, 28 Mar 2025 15:45:00 +0900") to epoch millis.
      * Returns 0 if parsing fails.
      */
     fun parseRfc822ToMillis(dateString: String?): Long {
         if (dateString == null) return 0
+        // ... rest of code
         try {
             // Remove day of week if present: "Fri, 28 Mar 2025 15:45:00 +0900" -> "28 Mar 2025 15:45:00 +0900"
             val cleanDate = if (dateString.contains(",")) {

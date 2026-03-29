@@ -37,6 +37,14 @@ fun RssItemCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            item.bookmarkCount?.let { count ->
+                Text(
+                    text = "$count users",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
             item.description?.let {
                 Text(
                     text = it,

@@ -41,5 +41,7 @@ data class RssItem(
     @XmlElement(true)
     val pubDate: String? = null,
     @XmlElement(true)
-    val guid: String? = null
+    val guid: String? = null,
+    @XmlElement(false)
+    val bookmarkCount: Int? = null
 )

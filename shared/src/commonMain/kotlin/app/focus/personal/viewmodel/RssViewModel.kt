@@ -16,7 +16,7 @@ sealed class RssUiState {
     data class Error(val message: String) : RssUiState()
 }
 
-enum class RssSource { YAHOO, GOOGLE }
+enum class RssSource { YAHOO, GOOGLE, HATENA }
 
 class RssViewModel(
     private val repository: RssRepository,
@@ -34,6 +34,7 @@ class RssViewModel(
     // メモリ上のキャッシュリスト
     private var yahooItems = listOf<RssItem>()
     private var googleItems = listOf<RssItem>()
+    private var hatenaItems = listOf<RssItem>()
 
     init {
         loadAllTopics()
@@ -42,7 +43,12 @@ class RssViewModel(
     fun setSource(source: RssSource) {
         if (_currentSource.value == source) return
         _currentSource.value = source
-        val cachedItems = if (source == RssSource.YAHOO) yahooItems else googleItems
+        
+        val cachedItems = when (source) {
+            RssSource.YAHOO -> yahooItems
+            RssSource.GOOGLE -> googleItems
+            RssSource.HATENA -> hatenaItems
+        }
         
         if (cachedItems.isEmpty()) {
             loadAllTopics()
@@ -56,10 +62,10 @@ class RssViewModel(
             _uiState.value = RssUiState.Loading
             try {
                 val source = _currentSource.value
-                val newItems = if (source == RssSource.YAHOO) {
-                    repository.fetchAllTopics()
-                } else {
-                    repository.fetchAllGoogleTopics()
+                val newItems = when (source) {
+                    RssSource.YAHOO -> repository.fetchAllTopics()
+                    RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
+                    RssSource.HATENA -> repository.fetchAllHatenaEntries()
                 }
                 updateList(newItems, source)
             } catch (e: Exception) {
@@ -73,10 +79,10 @@ class RssViewModel(
             _isRefreshing.value = true
             try {
                 val source = _currentSource.value
-                val newItems = if (source == RssSource.YAHOO) {
-                    repository.fetchAllTopics()
-                } else {
-                    repository.fetchAllGoogleTopics()
+                val newItems = when (source) {
+                    RssSource.YAHOO -> repository.fetchAllTopics()
+                    RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
+                    RssSource.HATENA -> repository.fetchAllHatenaEntries()
                 }
                 updateList(newItems, source)
             } catch (e: Exception) {
@@ -88,16 +94,27 @@ class RssViewModel(
     }
 
     private fun updateList(newItems: List<RssItem>, source: RssSource) {
-        val currentItems = if (source == RssSource.YAHOO) yahooItems else googleItems
+        val currentItems = when (source) {
+            RssSource.YAHOO -> yahooItems
+            RssSource.GOOGLE -> googleItems
+            RssSource.HATENA -> hatenaItems
+        }
+
         // 重複を排除してマージ
         val merged = (newItems + currentItems)
-            .distinctBy { it.guid ?: it.link }
-            .sortedByDescending { app.focus.personal.util.DateUtils.parseRfc822ToMillis(it.pubDate) }
+            .distinctBy { it.link }
+            .sortedByDescending { 
+                if (source == RssSource.HATENA) {
+                    app.focus.personal.util.DateUtils.parseIso8601ToMillis(it.pubDate)
+                } else {
+                    app.focus.personal.util.DateUtils.parseRfc822ToMillis(it.pubDate)
+                }
+            }
         
-        if (source == RssSource.YAHOO) {
-            yahooItems = merged
-        } else {
-            googleItems = merged
+        when (source) {
+            RssSource.YAHOO -> yahooItems = merged
+            RssSource.GOOGLE -> googleItems = merged
+            RssSource.HATENA -> hatenaItems = merged
         }
 
         if (_currentSource.value == source) {

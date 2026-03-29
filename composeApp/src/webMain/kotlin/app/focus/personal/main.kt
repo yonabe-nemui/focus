@@ -6,6 +6,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import app.focus.personal.db.DriverFactory
 import app.focus.personal.db.FocusDatabase
+import app.focus.personal.network.GoogleRssClient
+import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.YahooRssClient
 import app.focus.personal.repository.RssRepository
 import app.focus.personal.viewmodel.RssViewModel
@@ -31,10 +33,11 @@ fun main() {
                 val client = HttpClient()
                 val yahooApi = YahooRssClient(client)
                 val googleApi = GoogleRssClient(client)
+                val hatenaApi = HatenaRssClient(client)
                 
                 // DB がない場合はダミーのデータを扱う仕組みが必要ですが、
                 // まずは ViewModel の作成を完遂させます
-                val repository = RssRepository(database, yahooApi, googleApi)
+                val repository = RssRepository(database, yahooApi, googleApi, hatenaApi)
                 RssViewModel(repository, scope)
             } catch (e: Exception) {
                 println("CRITICAL ERROR in initialization: ${e.message}")

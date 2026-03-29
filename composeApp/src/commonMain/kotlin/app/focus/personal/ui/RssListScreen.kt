@@ -50,6 +50,11 @@ fun RssListScreen(
                         onClick = { viewModel.setSource(RssSource.GOOGLE) },
                         text = { Text("Google") }
                     )
+                    Tab(
+                        selected = currentSource == RssSource.HATENA,
+                        onClick = { viewModel.setSource(RssSource.HATENA) },
+                        text = { Text("はてな") }
+                    )
                 }
             }
         }

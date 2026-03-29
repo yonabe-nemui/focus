@@ -6,6 +6,7 @@ import androidx.compose.ui.window.ComposeUIViewController
 import app.focus.personal.db.DriverFactory
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.GoogleRssClient
+import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.YahooRssClient
 import app.focus.personal.repository.RssRepository
 import app.focus.personal.viewmodel.RssViewModel
@@ -20,7 +21,8 @@ fun MainViewController() = ComposeUIViewController {
         val client = HttpClient(Darwin)
         val yahooApi = YahooRssClient(client)
         val googleApi = GoogleRssClient(client)
-        val repository = RssRepository(database, yahooApi, googleApi)
+        val hatenaApi = HatenaRssClient(client)
+        val repository = RssRepository(database, yahooApi, googleApi, hatenaApi)
         RssViewModel(repository, scope)
     }
 

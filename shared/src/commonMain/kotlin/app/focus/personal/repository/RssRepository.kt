@@ -1,9 +1,12 @@
 package app.focus.personal.repository
 
 import app.focus.personal.db.FocusDatabase
+import app.focus.personal.model.HatenaRdf
 import app.focus.personal.model.RssFeed
 import app.focus.personal.model.RssItem
+import app.focus.personal.model.toRssItem
 import app.focus.personal.network.GoogleRssClient
+import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.YahooRssClient
 import app.focus.personal.util.DateUtils
 import kotlinx.coroutines.async
@@ -15,7 +18,8 @@ import kotlinx.coroutines.flow.flow
 class RssRepository(
     private val database: FocusDatabase?,
     private val yahooApi: YahooRssClient,
-    private val googleApi: GoogleRssClient
+    private val googleApi: GoogleRssClient,
+    private val hatenaApi: HatenaRssClient
 ) {
     private val queries = database?.focusDatabaseQueries
 
@@ -70,6 +74,45 @@ class RssRepository(
             .flatten()
             .distinctBy { it.guid ?: it.link }
             .sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
+    }
+
+    suspend fun fetchHatenaHotEntries(): List<RssItem> {
+        return try {
+            hatenaApi.fetchHotEntry().items.map { it.toRssItem() }
+                .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun fetchHatenaNewEntries(): List<RssItem> {
+        return try {
+            hatenaApi.fetchEntryList().items.map { it.toRssItem() }
+                .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun fetchHatenaItEntries(): List<RssItem> {
+        return try {
+            hatenaApi.fetchItHotEntry().items.map { it.toRssItem() }
+                .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun fetchAllHatenaEntries(): List<RssItem> = coroutineScope {
+        val deferredHot = async { try { hatenaApi.fetchHotEntry().items } catch (e: Exception) { emptyList() } }
+        val deferredNew = async { try { hatenaApi.fetchEntryList().items } catch (e: Exception) { emptyList() } }
+        val deferredIt = async { try { hatenaApi.fetchItHotEntry().items } catch (e: Exception) { emptyList() } }
+
+        awaitAll(deferredHot, deferredNew, deferredIt)
+            .flatten()
+            .distinctBy { it.link }
+            .map { it.toRssItem() }
+            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
     }
 
     suspend fun refreshCategory(category: String) {
