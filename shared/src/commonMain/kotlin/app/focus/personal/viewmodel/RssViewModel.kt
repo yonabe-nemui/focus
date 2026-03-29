@@ -1,6 +1,8 @@
 package app.focus.personal.viewmodel
 
-import app.focus.personal.model.*
+import app.focus.personal.model.BlueskySession
+import app.focus.personal.model.MutedWord
+import app.focus.personal.model.RssItem
 import app.focus.personal.repository.RssRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,9 @@ class RssViewModel(
     private val _blueskySession = MutableStateFlow<BlueskySession?>(null)
     val blueskySession: StateFlow<BlueskySession?> = _blueskySession.asStateFlow()
 
+    private val _is2faRequired = MutableStateFlow(false)
+    val is2faRequired: StateFlow<Boolean> = _is2faRequired.asStateFlow()
+
     private val _mutedWords = MutableStateFlow<List<MutedWord>>(emptyList())
 
     // メモリ上のキャッシュリスト
@@ -42,7 +47,36 @@ class RssViewModel(
     private var blueskyItems = listOf<RssItem>()
 
     init {
+        checkSavedSession()
         loadAllTopics()
+    }
+
+    private fun checkSavedSession() {
+        val savedSession = repository.getSavedBlueskySession()
+        if (savedSession != null) {
+            _blueskySession.value = savedSession
+            // 非同期でプレファレンスを取得（セッション有効チェックも兼ねる）
+            scope.launch(Dispatchers.Default) {
+                try {
+                    _mutedWords.value = repository.getBlueskyMutedWords(savedSession)
+                } catch (e: Exception) {
+                    // セッション切れの可能性。リフレッシュを試みる
+                    tryRefreshSession(savedSession.refreshJwt)
+                }
+            }
+        }
+    }
+
+    private suspend fun tryRefreshSession(refreshJwt: String) {
+        try {
+            val newSession = repository.refreshBlueskySession(refreshJwt)
+            _blueskySession.value = newSession
+            _mutedWords.value = repository.getBlueskyMutedWords(newSession)
+        } catch (e: Exception) {
+            // リフレッシュも失敗した場合はログアウト状態にする
+            _blueskySession.value = null
+            repository.clearBlueskySession()
+        }
     }
 
     fun setSource(source: RssSource) {
@@ -64,17 +98,33 @@ class RssViewModel(
         }
     }
 
-    fun loginBluesky(handle: String, appPassword: String) {
+    fun loginBluesky(handle: String, appPassword: String, authCode: String? = null) {
         scope.launch(Dispatchers.Default) {
             _uiState.value = RssUiState.Loading
             try {
-                val session = repository.loginBluesky(handle, appPassword)
+                val session = repository.loginBluesky(handle, appPassword, authCode)
                 _blueskySession.value = session
+                _is2faRequired.value = false
                 _mutedWords.value = repository.getBlueskyMutedWords(session)
                 loadAllTopics()
             } catch (e: Exception) {
-                _uiState.value = RssUiState.Error("Login failed: ${e.message}")
+                if (e.message == "AuthFactorRequired") {
+                    _is2faRequired.value = true
+                    _uiState.value = RssUiState.Success(emptyList()) // Stop loading to show code field
+                } else {
+                    _uiState.value = RssUiState.Error("Login failed: ${e.message}")
+                }
             }
+        }
+    }
+
+    fun logoutBluesky() {
+        _blueskySession.value = null
+        _mutedWords.value = emptyList()
+        blueskyItems = emptyList()
+        repository.clearBlueskySession()
+        if (_currentSource.value == RssSource.BLUESKY) {
+            _uiState.value = RssUiState.Success(emptyList())
         }
     }
 
@@ -87,16 +137,37 @@ class RssViewModel(
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
                     RssSource.BLUESKY -> {
-                        repository.fetchBlueskyEntries(
-                            query = "IT", // デフォルトキーワード
-                            session = _blueskySession.value,
-                            mutedWords = _mutedWords.value
-                        )
+                        fetchBlueskyWithRetry()
                     }
                 }
                 updateList(newItems, source)
             } catch (e: Exception) {
                 _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    private suspend fun fetchBlueskyWithRetry(): List<RssItem> {
+        val session = _blueskySession.value ?: return emptyList()
+        return try {
+            repository.fetchBlueskyEntries(
+                query = "IT",
+                session = session,
+                mutedWords = _mutedWords.value
+            )
+        } catch (e: Exception) {
+            // エラー時（セッション切れ等）に1回だけリフレッシュして再試行
+            try {
+                val newSession = repository.refreshBlueskySession(session.refreshJwt)
+                _blueskySession.value = newSession
+                repository.fetchBlueskyEntries(
+                    query = "IT",
+                    session = newSession,
+                    mutedWords = repository.getBlueskyMutedWords(newSession)
+                )
+            } catch (retryEx: Exception) {
+                // リトライも失敗した場合は空リスト（またはエラー）
+                throw retryEx
             }
         }
     }
@@ -110,11 +181,7 @@ class RssViewModel(
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
                     RssSource.BLUESKY -> {
-                        repository.fetchBlueskyEntries(
-                            query = "IT",
-                            session = _blueskySession.value,
-                            mutedWords = _mutedWords.value
-                        )
+                        fetchBlueskyWithRetry()
                     }
                 }
                 updateList(newItems, source)

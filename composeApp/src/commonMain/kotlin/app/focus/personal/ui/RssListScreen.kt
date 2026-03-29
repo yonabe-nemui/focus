@@ -1,16 +1,52 @@
 package app.focus.personal.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.AutofillNode
+import androidx.compose.ui.autofill.AutofillType
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalAutofill
+import androidx.compose.ui.platform.LocalAutofillTree
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -28,6 +64,7 @@ fun RssListScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val currentSource by viewModel.currentSource.collectAsState()
     val blueskySession by viewModel.blueskySession.collectAsState()
+    val is2faRequired by viewModel.is2faRequired.collectAsState()
 
     Scaffold(
         topBar = {
@@ -55,7 +92,9 @@ fun RssListScreen(
     ) { paddingValues ->
         if (currentSource == RssSource.BLUESKY && blueskySession == null) {
             BlueskyLoginScreen(
-                onLogin = { handle, password -> viewModel.loginBluesky(handle, password) },
+                is2faRequired = is2faRequired,
+                uiState = uiState,
+                onLogin = { handle, password, code -> viewModel.loginBluesky(handle, password, code) },
                 modifier = Modifier.padding(paddingValues)
             )
         } else {
@@ -96,14 +135,25 @@ fun RssListScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun BlueskyLoginScreen(
-    onLogin: (String, String) -> Unit,
+    is2faRequired: Boolean,
+    uiState: RssUiState,
+    onLogin: (String, String, String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var handle by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var authCode by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val clipboardManager = LocalClipboardManager.current
+    val isLoading = uiState is RssUiState.Loading
+
+    // Autofill support
+    val autofill = LocalAutofill.current
+    val autofillTree = LocalAutofillTree.current
 
     Column(
         modifier = modifier
@@ -122,33 +172,125 @@ fun BlueskyLoginScreen(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        TextField(
-            value = handle,
-            onValueChange = { handle = it },
-            label = { Text("Handle (e.g. user.bsky.social)") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-        )
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("App Password") },
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                val description = if (passwordVisible) "Hide password" else "Show password"
 
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = description)
+        if (uiState is RssUiState.Error) {
+            val errorMessage = if (uiState.message.contains("429") || uiState.message.contains("RateLimitExceeded")) {
+                "アクセス制限がかかりました。数分〜数十分待ってから再度お試しください。"
+            } else {
+                uiState.message
+            }
+            
+            SelectionContainer {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .combinedClickable(
+                            onClick = { /* Do nothing on single click */ },
+                            onLongClick = {
+                                clipboardManager.setText(AnnotatedString(uiState.message))
+                            }
+                        )
+                )
+            }
+        }
+        
+        if (!is2faRequired) {
+            TextField(
+                value = handle,
+                onValueChange = { handle = it },
+                label = { Text("Handle or Email") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .onGloballyPositioned { coordinates ->
+                        val node = AutofillNode(
+                            autofillTypes = listOf(AutofillType.Username, AutofillType.EmailAddress),
+                            onFill = { handle = it }
+                        )
+                        autofillTree += node
+                    },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    autoCorrect = false
+                ),
+                enabled = !isLoading
+            )
+            TextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("App Password") },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    val description = if (passwordVisible) "Hide password" else "Show password"
+
+                    IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = !isLoading) {
+                        Icon(imageVector = image, contentDescription = description)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+                    .onGloballyPositioned { coordinates ->
+                        val node = AutofillNode(
+                            autofillTypes = listOf(AutofillType.Password),
+                            onFill = { password = it }
+                        )
+                        autofillTree += node
+                    },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    autoCorrect = false
+                ),
+                enabled = !isLoading
+            )
+            Button(
+                onClick = { onLogin(handle, password, null) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = handle.isNotEmpty() && password.isNotEmpty() && !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.height(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Login")
                 }
-            },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-        )
-        Button(
-            onClick = { onLogin(handle, password) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = handle.isNotEmpty() && password.isNotEmpty()
-        ) {
-            Text("Login")
+            }
+        } else {
+            Text(
+                text = "認証コードがメールで送信されました。入力してください。",
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            TextField(
+                value = authCode,
+                onValueChange = { authCode = it },
+                label = { Text("Verification Code") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                enabled = !isLoading
+            )
+            Button(
+                onClick = { onLogin(handle, password, authCode) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = authCode.isNotEmpty() && !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.height(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Verify Code")
+                }
+            }
         }
     }
 }

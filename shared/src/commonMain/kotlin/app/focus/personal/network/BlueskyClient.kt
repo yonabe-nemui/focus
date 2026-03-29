@@ -7,12 +7,15 @@ import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MutedWord
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -25,12 +28,50 @@ class BlueskyClient(private val client: HttpClient) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun createSession(handle: String, appPassword: String): BlueskySession {
-        val response = client.post("$baseUrl/com.atproto.server.createSession") {
+    suspend fun createSession(
+        handle: String, 
+        appPassword: String, 
+        authCode: String? = null
+    ): BlueskySession {
+        val response: HttpResponse = client.post("$baseUrl/com.atproto.server.createSession") {
             contentType(ContentType.Application.Json)
-            setBody(mapOf("identifier" to handle, "password" to appPassword))
+            val bodyMap = mutableMapOf("identifier" to handle, "password" to appPassword)
+            if (authCode != null) {
+                bodyMap["authCode"] = authCode
+            }
+            setBody(bodyMap)
         }
-        return response.body()
+
+        if (response.status == HttpStatusCode.OK) {
+            return response.body()
+        } else if (response.status == HttpStatusCode.Unauthorized) {
+            val errorBody = response.body<String>()
+            val is2fa = errorBody.contains("AuthFactor", ignoreCase = true) || 
+                       errorBody.contains("sign in code", ignoreCase = true) ||
+                       errorBody.contains("sign on code", ignoreCase = true)
+            
+            if (is2fa) {
+                throw Exception("AuthFactorRequired")
+            } else {
+                throw Exception("Unauthorized: $errorBody")
+            }
+        } else {
+            val errorBody = response.body<String>()
+            throw Exception("HTTP ${response.status}: $errorBody")
+        }
+    }
+
+    suspend fun refreshSession(refreshJwt: String): BlueskySession {
+        val response: HttpResponse = client.post("$baseUrl/com.atproto.server.refreshSession") {
+            header("Authorization", "Bearer $refreshJwt")
+        }
+
+        if (response.status == HttpStatusCode.OK) {
+            return response.body()
+        } else {
+            val errorBody = response.body<String>()
+            throw Exception("Session refresh failed: $errorBody")
+        }
     }
 
     suspend fun getMutedWords(session: BlueskySession): List<MutedWord> {
@@ -41,8 +82,6 @@ class BlueskyClient(private val client: HttpClient) {
         val prefsJson = json.parseToJsonElement(prefsString).jsonObject
         val prefsArray = prefsJson["preferences"]?.jsonArray ?: return emptyList()
         
-        // Find 'app.bsky.actor.defs#contentLabelPref' or 'mutedWords' if available
-        // Simplified: looking for mutedWords in preferences
         for (pref in prefsArray) {
             val obj = pref.jsonObject
             if (obj["\$type"]?.jsonPrimitive?.content == "app.bsky.actor.defs#mutedWordsPref") {

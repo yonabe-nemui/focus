@@ -1,7 +1,12 @@
 package app.focus.personal.repository
 
 import app.focus.personal.db.FocusDatabase
-import app.focus.personal.model.*
+import app.focus.personal.model.BlueskySearchResponse
+import app.focus.personal.model.BlueskySession
+import app.focus.personal.model.MutedWord
+import app.focus.personal.model.RssFeed
+import app.focus.personal.model.RssItem
+import app.focus.personal.model.toRssItem
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
@@ -80,8 +85,48 @@ class RssRepository(
             .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
     }
 
-    suspend fun loginBluesky(handle: String, appPassword: String): BlueskySession {
-        return blueskyApi.createSession(handle, appPassword)
+    suspend fun loginBluesky(
+        handle: String, 
+        appPassword: String, 
+        authCode: String? = null
+    ): BlueskySession {
+        val session = blueskyApi.createSession(handle, appPassword, authCode)
+        saveBlueskySession(session)
+        return session
+    }
+
+    fun getSavedBlueskySession(): BlueskySession? {
+        return queries?.getActiveBlueskySession()?.executeAsOneOrNull()?.let { entity ->
+            BlueskySession(
+                accessJwt = entity.accessJwt,
+                refreshJwt = entity.refreshJwt,
+                handle = entity.handle,
+                did = entity.did
+            )
+        }
+    }
+
+    fun saveBlueskySession(session: BlueskySession) {
+        queries?.transaction {
+            queries.clearActiveBlueskySession()
+            queries.upsertBlueskySession(
+                handle = session.handle,
+                accessJwt = session.accessJwt,
+                refreshJwt = session.refreshJwt,
+                did = session.did,
+                isActive = true
+            )
+        }
+    }
+
+    fun clearBlueskySession() {
+        queries?.clearActiveBlueskySession()
+    }
+
+    suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession {
+        val session = blueskyApi.refreshSession(refreshJwt)
+        saveBlueskySession(session)
+        return session
     }
 
     suspend fun getBlueskyMutedWords(session: BlueskySession): List<MutedWord> {

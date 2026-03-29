@@ -18,6 +18,14 @@ CREATE TABLE RssItemEntity (
     FOREIGN KEY (channelId) REFERENCES RssChannelEntity(id) ON DELETE CASCADE
 );
 
+CREATE TABLE BlueskySessionEntity (
+    handle TEXT PRIMARY KEY,
+    accessJwt TEXT NOT NULL,
+    refreshJwt TEXT NOT NULL,
+    did TEXT NOT NULL,
+    isActive INTEGER AS Boolean NOT NULL DEFAULT 0
+);
+
 -- Queries
 insertChannel:
 INSERT INTO RssChannelEntity(title, link, description, category)
@@ -36,7 +44,6 @@ SELECT * FROM RssChannelEntity WHERE category = ?;
 selectItemsByChannelId:
 SELECT * FROM RssItemEntity WHERE channelId = ? ORDER BY pubDateMillis DESC;
 
--- カテゴリに紐づくアイテムを最新順（pubDateMillis降順）でページング取得
 selectPagedItemsByCategory:
 SELECT item.* FROM RssItemEntity AS item
 JOIN RssChannelEntity AS channel ON item.channelId = channel.id
@@ -46,3 +53,17 @@ LIMIT ? OFFSET ?;
 
 deleteChannelByCategory:
 DELETE FROM RssChannelEntity WHERE category = ?;
+
+-- Bluesky Session Queries
+upsertBlueskySession:
+INSERT OR REPLACE INTO BlueskySessionEntity(handle, accessJwt, refreshJwt, did, isActive)
+VALUES (?, ?, ?, ?, ?);
+
+getActiveBlueskySession:
+SELECT * FROM BlueskySessionEntity WHERE isActive = 1 LIMIT 1;
+
+clearActiveBlueskySession:
+UPDATE BlueskySessionEntity SET isActive = 0;
+
+deleteBlueskySession:
+DELETE FROM BlueskySessionEntity WHERE handle = ?;
