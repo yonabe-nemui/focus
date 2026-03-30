@@ -23,7 +23,7 @@ CREATE TABLE BlueskySessionEntity (
     accessJwt TEXT NOT NULL,
     refreshJwt TEXT NOT NULL,
     did TEXT NOT NULL,
-    isActive INTEGER AS Boolean NOT NULL DEFAULT 0
+    isActive INTEGER NOT NULL DEFAULT 0 -- 0 for false, 1 for true
 );
 
 -- Queries

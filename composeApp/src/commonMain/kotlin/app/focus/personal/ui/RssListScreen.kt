@@ -94,7 +94,13 @@ fun RssListScreen(
             BlueskyLoginScreen(
                 is2faRequired = is2faRequired,
                 uiState = uiState,
-                onLogin = { handle, password, code -> viewModel.loginBluesky(handle, password, code) },
+                onLogin = { handle, password, code ->
+                    viewModel.loginBluesky(
+                        handle,
+                        password,
+                        code
+                    )
+                },
                 modifier = Modifier.padding(paddingValues)
             )
         } else {
@@ -109,6 +115,7 @@ fun RssListScreen(
                     is RssUiState.Loading -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
+
                     is RssUiState.Success -> {
                         LazyColumn(
                             modifier = Modifier
@@ -174,12 +181,13 @@ fun BlueskyLoginScreen(
         )
 
         if (uiState is RssUiState.Error) {
-            val errorMessage = if (uiState.message.contains("429") || uiState.message.contains("RateLimitExceeded")) {
-                "アクセス制限がかかりました。数分〜数十分待ってから再度お試しください。"
-            } else {
-                uiState.message
-            }
-            
+            val errorMessage =
+                if (uiState.message.contains("429") || uiState.message.contains("RateLimitExceeded")) {
+                    "アクセス制限がかかりました。数分〜数十分待ってから再度お試しください。"
+                } else {
+                    uiState.message
+                }
+
             SelectionContainer {
                 Text(
                     text = errorMessage,
@@ -196,18 +204,21 @@ fun BlueskyLoginScreen(
                 )
             }
         }
-        
+
         if (!is2faRequired) {
             TextField(
                 value = handle,
-                onValueChange = { handle = it },
+                onValueChange = { handle = it.replace("\n", "") },
                 label = { Text("Handle or Email") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
                     .onGloballyPositioned { coordinates ->
                         val node = AutofillNode(
-                            autofillTypes = listOf(AutofillType.Username, AutofillType.EmailAddress),
+                            autofillTypes = listOf(
+                                AutofillType.Username,
+                                AutofillType.EmailAddress
+                            ),
                             onFill = { handle = it }
                         )
                         autofillTree += node
@@ -216,18 +227,23 @@ fun BlueskyLoginScreen(
                     keyboardType = KeyboardType.Email,
                     autoCorrect = false
                 ),
+                singleLine = true,
                 enabled = !isLoading
             )
             TextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { password = it.replace("\n", "") },
                 label = { Text("App Password") },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                    val image =
+                        if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                     val description = if (passwordVisible) "Hide password" else "Show password"
 
-                    IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = !isLoading) {
+                    IconButton(
+                        onClick = { passwordVisible = !passwordVisible },
+                        enabled = !isLoading
+                    ) {
                         Icon(imageVector = image, contentDescription = description)
                     }
                 },
@@ -245,10 +261,11 @@ fun BlueskyLoginScreen(
                     keyboardType = KeyboardType.Password,
                     autoCorrect = false
                 ),
+                singleLine = true,
                 enabled = !isLoading
             )
             Button(
-                onClick = { onLogin(handle, password, null) },
+                onClick = { onLogin(handle.trim(), password.trim(), null) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = handle.isNotEmpty() && password.isNotEmpty() && !isLoading
             ) {
@@ -270,14 +287,21 @@ fun BlueskyLoginScreen(
             )
             TextField(
                 value = authCode,
-                onValueChange = { authCode = it },
+                onValueChange = { authCode = it.replace("\n", "").replace(" ", "").uppercase() },
                 label = { Text("Verification Code") },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Ascii,
+                    autoCorrect = false
+                ),
+                singleLine = true,
                 enabled = !isLoading
             )
             Button(
-                onClick = { onLogin(handle, password, authCode) },
+                onClick = { 
+                    val cleanedCode = authCode.replace("-", "").trim()
+                    onLogin(handle.trim(), password.trim(), cleanedCode) 
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = authCode.isNotEmpty() && !isLoading
             ) {

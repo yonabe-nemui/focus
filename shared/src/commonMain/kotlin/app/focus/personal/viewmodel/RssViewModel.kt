@@ -4,8 +4,10 @@ import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MutedWord
 import app.focus.personal.model.RssItem
 import app.focus.personal.repository.RssRepository
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +23,8 @@ enum class RssSource { GOOGLE, HATENA, BLUESKY }
 
 class RssViewModel(
     private val repository: RssRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val dispatcher: CoroutineContext = Dispatchers.Default
 ) {
     private val _uiState = MutableStateFlow<RssUiState>(RssUiState.Loading)
     val uiState: StateFlow<RssUiState> = _uiState.asStateFlow()
@@ -56,7 +59,7 @@ class RssViewModel(
         if (savedSession != null) {
             _blueskySession.value = savedSession
             // 非同期でプレファレンスを取得（セッション有効チェックも兼ねる）
-            scope.launch(Dispatchers.Default) {
+            scope.launch(dispatcher) {
                 try {
                     _mutedWords.value = repository.getBlueskyMutedWords(savedSession)
                 } catch (e: Exception) {
@@ -99,18 +102,26 @@ class RssViewModel(
     }
 
     fun loginBluesky(handle: String, appPassword: String, authCode: String? = null) {
-        scope.launch(Dispatchers.Default) {
+        scope.launch(dispatcher) {
             _uiState.value = RssUiState.Loading
             try {
+                Napier.d("Attempting BlueSky login for: $handle, hasAuthCode: ${authCode != null}")
                 val session = repository.loginBluesky(handle, appPassword, authCode)
+                Napier.i("BlueSky login successful for: ${session.handle}")
                 _blueskySession.value = session
                 _is2faRequired.value = false
                 _mutedWords.value = repository.getBlueskyMutedWords(session)
                 loadAllTopics()
             } catch (e: Exception) {
+                Napier.e("BlueSky login failed", e)
                 if (e.message == "AuthFactorRequired") {
-                    _is2faRequired.value = true
-                    _uiState.value = RssUiState.Success(emptyList()) // Stop loading to show code field
+                    if (authCode != null) {
+                        _uiState.value = RssUiState.Error("認証コードが正しくないか、期限が切れています。")
+                    } else {
+                        Napier.i("2FA required for BlueSky login")
+                        _is2faRequired.value = true
+                        _uiState.value = RssUiState.Success(emptyList()) // Stop loading to show code field
+                    }
                 } else {
                     _uiState.value = RssUiState.Error("Login failed: ${e.message}")
                 }
@@ -129,7 +140,7 @@ class RssViewModel(
     }
 
     fun loadAllTopics() {
-        scope.launch(Dispatchers.Default) {
+        scope.launch(dispatcher) {
             _uiState.value = RssUiState.Loading
             try {
                 val source = _currentSource.value
@@ -173,7 +184,7 @@ class RssViewModel(
     }
 
     fun refresh() {
-        scope.launch(Dispatchers.Default) {
+        scope.launch(dispatcher) {
             _isRefreshing.value = true
             try {
                 val source = _currentSource.value

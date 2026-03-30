@@ -1,6 +1,9 @@
 package app.focus.personal.repository
 
+import app.focus.personal.db.BlueskySessionEntity
 import app.focus.personal.db.FocusDatabase
+import app.focus.personal.db.RssChannelEntity
+import app.focus.personal.db.RssItemEntity
 import app.focus.personal.model.BlueskySearchResponse
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MutedWord
@@ -114,7 +117,7 @@ class RssRepository(
                 accessJwt = session.accessJwt,
                 refreshJwt = session.refreshJwt,
                 did = session.did,
-                isActive = true
+                isActive = 1L
             )
         }
     }

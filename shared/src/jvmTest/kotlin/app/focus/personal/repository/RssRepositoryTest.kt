@@ -2,6 +2,7 @@ package app.focus.personal.repository
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import app.focus.personal.db.FocusDatabase
+import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
 import io.ktor.client.HttpClient
@@ -58,7 +59,8 @@ class RssRepositoryTest {
         val client = HttpClient(mockEngine)
         val googleApi = GoogleRssClient(client)
         val hatenaApi = HatenaRssClient(client)
-        val repository = RssRepository(database, googleApi, hatenaApi)
+        val blueskyApi = BlueskyClient(client)
+        val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi)
 
         // データの取得を実行
         val items = repository.fetchAllGoogleTopics()

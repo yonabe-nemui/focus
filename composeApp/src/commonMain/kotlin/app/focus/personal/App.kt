@@ -1,5 +1,7 @@
 package app.focus.personal
 
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import app.focus.personal.ui.RssListScreen
@@ -18,6 +20,11 @@ fun App(
     viewModel: RssViewModel,
     onLinkClick: (String) -> Unit // Keep this for now, but we'll use internal navigation
 ) {
+    LaunchedEffect(Unit) {
+        // Simple initialization for debug builds. 
+        // In a real app, this should be platform-specific.
+        Napier.base(DebugAntilog())
+    }
     var currentScreen by remember { mutableStateOf<Screen>(Screen.List) }
 
     MaterialTheme {
