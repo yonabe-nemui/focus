@@ -1,13 +1,11 @@
 package app.focus.personal.network
 
-import app.focus.personal.model.BlueskyPost
-import app.focus.personal.model.BlueskyRecord
-import app.focus.personal.model.BlueskySearchResponse
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MutedWord
+import app.focus.personal.model.BlueskySearchResponse
+import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
@@ -37,15 +35,18 @@ class BlueskyClient(private val client: HttpClient) {
             contentType(ContentType.Application.Json)
             val bodyMap = mutableMapOf("identifier" to handle, "password" to appPassword)
             if (authCode != null) {
-                bodyMap["authCode"] = authCode
+                bodyMap["authFactorToken"] = authCode
             }
             setBody(bodyMap)
         }
 
+        val responseBody = response.body<String>()
+        Napier.d("BlueSky createSession response [${response.status}]: $responseBody")
+
         if (response.status == HttpStatusCode.OK) {
-            return response.body()
+            return json.decodeFromString<BlueskySession>(responseBody)
         } else if (response.status == HttpStatusCode.Unauthorized) {
-            val errorBody = response.body<String>()
+            val errorBody = responseBody
             val is2fa = errorBody.contains("AuthFactor", ignoreCase = true) || 
                        errorBody.contains("sign in code", ignoreCase = true) ||
                        errorBody.contains("sign on code", ignoreCase = true)
@@ -56,8 +57,7 @@ class BlueskyClient(private val client: HttpClient) {
                 throw Exception("Unauthorized: $errorBody")
             }
         } else {
-            val errorBody = response.body<String>()
-            throw Exception("HTTP ${response.status}: $errorBody")
+            throw Exception("HTTP ${response.status}: $responseBody")
         }
     }
 
