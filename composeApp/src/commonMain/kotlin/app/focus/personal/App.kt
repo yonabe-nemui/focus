@@ -11,6 +11,8 @@ import androidx.compose.ui.tooling.preview.Preview
 sealed class Screen {
     object List : Screen()
     data class WebView(val url: String) : Screen()
+}
+
 @Composable
 @Preview
 fun App(
@@ -18,7 +20,7 @@ fun App(
     onLinkClick: (String) -> Unit // Keep this for now
 ) {
     val backStack = remember { mutableStateListOf<Screen>(Screen.List) }
-    val currentScreen = backStack.last()
+    val currentScreen = backStack.lastOrNull() ?: Screen.List
 
     // 画面が2枚以上あるときだけバックハンドラーを有効にする
     // これにより、1枚目のときはシステムデフォルト（アプリ終了）に任せられる

@@ -82,9 +82,7 @@ fun RssListScreen(
                 modifier = Modifier.padding(paddingValues)
             )
         } else {
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = { viewModel.refresh() },
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
