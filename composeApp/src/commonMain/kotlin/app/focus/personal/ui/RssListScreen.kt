@@ -274,10 +274,8 @@ fun BlueskyLoginScreen(
                 enabled = !isLoading
             )
             Button(
-                onClick = { 
-                    // ハイフンを除去して送信する
-                    val cleanedCode = authCode.replace("-", "").trim()
-                    onLogin(handle.trim(), password.trim(), cleanedCode) 
+                onClick = {
+                    onLogin(handle.trim(), password.trim(), authCode.trim())
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = authCode.isNotEmpty() && !isLoading

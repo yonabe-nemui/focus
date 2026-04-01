@@ -35,7 +35,7 @@ class BlueskyClient(private val client: HttpClient) {
             contentType(ContentType.Application.Json)
             val bodyMap = mutableMapOf("identifier" to handle, "password" to appPassword)
             if (authCode != null) {
-                bodyMap["authCode"] = authCode
+                bodyMap["authFactorToken"] = authCode
             }
             setBody(bodyMap)
         }
@@ -49,8 +49,10 @@ class BlueskyClient(private val client: HttpClient) {
             val is2fa = responseBody.contains("AuthFactor", ignoreCase = true) ||
                     responseBody.contains("sign in code", ignoreCase = true) ||
                     responseBody.contains("sign on code", ignoreCase = true)
-            if (is2fa) {
+            if (is2fa && authCode == null) {
                 throw Exception("AuthFactorRequired")
+            } else if (is2fa && authCode != null) {
+                throw Exception("AuthFactorInvalid")
             } else {
                 throw Exception("Unauthorized: $responseBody")
             }

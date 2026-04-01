@@ -114,16 +114,18 @@ class RssViewModel(
                 loadAllTopics()
             } catch (e: Exception) {
                 Napier.e("BlueSky login failed", e)
-                if (e.message == "AuthFactorRequired") {
-                    if (authCode != null) {
-                        _uiState.value = RssUiState.Error("認証コードが正しくないか、期限が切れています。")
-                    } else {
+                when (e.message) {
+                    "AuthFactorRequired" -> {
                         Napier.i("2FA required for BlueSky login")
                         _is2faRequired.value = true
-                        _uiState.value = RssUiState.Success(emptyList()) // Stop loading to show code field
+                        _uiState.value = RssUiState.Success(emptyList())
                     }
-                } else {
-                    _uiState.value = RssUiState.Error("Login failed: ${e.message}")
+                    "AuthFactorInvalid" -> {
+                        _uiState.value = RssUiState.Error("認証コードが正しくないか、期限が切れています。")
+                    }
+                    else -> {
+                        _uiState.value = RssUiState.Error("Login failed: ${e.message}")
+                    }
                 }
             }
         }
