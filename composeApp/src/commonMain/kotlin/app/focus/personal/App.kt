@@ -1,8 +1,8 @@
 package app.focus.personal
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import app.focus.personal.ui.BindBackHandler
+import app.focus.personal.ui.FocusTheme
 import app.focus.personal.ui.RssListScreen
 import app.focus.personal.ui.WebViewScreen
 import app.focus.personal.viewmodel.RssViewModel
@@ -30,7 +30,7 @@ fun App(
         }
     }
 
-    MaterialTheme {
+    FocusTheme {
         when (val screen = currentScreen) {
             is Screen.List -> {
                 RssListScreen(

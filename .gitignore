@@ -54,3 +54,4 @@ Thumbs.db
 node_modules/
 dist/
 .kotlin-js-store/
+.claude/settings.local.json
