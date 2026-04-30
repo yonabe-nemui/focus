@@ -10,9 +10,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import app.focus.personal.db.DriverFactory
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.BlueskyClient
-import app.focus.personal.network.GoogleRssClient
-import app.focus.personal.network.HatenaRssClient
-import app.focus.personal.repository.RssRepository
+import app.focus.personal.network.FocusApiClient
+import app.focus.personal.repository.ServerRssRepository
 import app.focus.personal.viewmodel.RssViewModel
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
@@ -37,10 +36,9 @@ class MainActivity : ComponentActivity() {
                         json(Json { ignoreUnknownKeys = true })
                     }
                 }
-                val googleApi = GoogleRssClient(client)
-                val hatenaApi = HatenaRssClient(client)
+                val apiClient = FocusApiClient(client, "http://10.0.2.2:$SERVER_PORT")
                 val blueskyApi = BlueskyClient(client)
-                val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi)
+                val repository = ServerRssRepository(database, apiClient, blueskyApi)
                 RssViewModel(repository, scope)
             }
 

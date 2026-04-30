@@ -25,7 +25,7 @@ class RssRepository(
     private val googleApi: GoogleRssClient,
     private val hatenaApi: HatenaRssClient,
     private val blueskyApi: BlueskyClient
-) {
+) : FeedRepository {
     private val queries = database?.focusDatabaseQueries
 
     private val googleTopics = listOf(
@@ -33,7 +33,7 @@ class RssRepository(
         "ENTERTAINMENT", "SPORTS", "SCIENCE", "HEALTH"
     )
 
-    suspend fun fetchAllGoogleTopics(): List<RssItem> = coroutineScope {
+    override suspend fun fetchAllGoogleTopics(): List<RssItem> = coroutineScope {
         val deferredTop = async {
             try { googleApi.fetchTopStories().channel.items } catch (e: Exception) { emptyList() }
         }
@@ -47,6 +47,18 @@ class RssRepository(
             .flatten()
             .distinctBy { it.guid ?: it.link }
             .sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
+    }
+
+    override suspend fun fetchAllHatenaEntries(): List<RssItem> = coroutineScope {
+        val deferredHot = async { try { hatenaApi.fetchHotEntry().items } catch (e: Exception) { emptyList() } }
+        val deferredNew = async { try { hatenaApi.fetchEntryList().items } catch (e: Exception) { emptyList() } }
+        val deferredIt = async { try { hatenaApi.fetchItHotEntry().items } catch (e: Exception) { emptyList() } }
+
+        awaitAll(deferredHot, deferredNew, deferredIt)
+            .flatten()
+            .distinctBy { it.link }
+            .map { it.toRssItem() }
+            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
     }
 
     suspend fun fetchHatenaHotEntries(): List<RssItem> {
@@ -76,29 +88,17 @@ class RssRepository(
         }
     }
 
-    suspend fun fetchAllHatenaEntries(): List<RssItem> = coroutineScope {
-        val deferredHot = async { try { hatenaApi.fetchHotEntry().items } catch (e: Exception) { emptyList() } }
-        val deferredNew = async { try { hatenaApi.fetchEntryList().items } catch (e: Exception) { emptyList() } }
-        val deferredIt = async { try { hatenaApi.fetchItHotEntry().items } catch (e: Exception) { emptyList() } }
-
-        awaitAll(deferredHot, deferredNew, deferredIt)
-            .flatten()
-            .distinctBy { it.link }
-            .map { it.toRssItem() }
-            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
-    }
-
-    suspend fun loginBluesky(
-        handle: String, 
-        appPassword: String, 
-        authCode: String? = null
+    override suspend fun loginBluesky(
+        handle: String,
+        appPassword: String,
+        authCode: String?
     ): BlueskySession {
         val session = blueskyApi.createSession(handle, appPassword, authCode)
         saveBlueskySession(session)
         return session
     }
 
-    fun getSavedBlueskySession(): BlueskySession? {
+    override fun getSavedBlueskySession(): BlueskySession? {
         return queries?.getActiveBlueskySession()?.executeAsOneOrNull()?.let { entity ->
             BlueskySession(
                 accessJwt = entity.accessJwt,
@@ -109,7 +109,7 @@ class RssRepository(
         }
     }
 
-    fun saveBlueskySession(session: BlueskySession) {
+    override fun saveBlueskySession(session: BlueskySession) {
         queries?.transaction {
             queries.clearActiveBlueskySession()
             queries.upsertBlueskySession(
@@ -122,17 +122,17 @@ class RssRepository(
         }
     }
 
-    fun clearBlueskySession() {
+    override fun clearBlueskySession() {
         queries?.clearActiveBlueskySession()
     }
 
-    suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession {
+    override suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession {
         val session = blueskyApi.refreshSession(refreshJwt)
         saveBlueskySession(session)
         return session
     }
 
-    suspend fun getBlueskyMutedWords(session: BlueskySession): List<MutedWord> {
+    override suspend fun getBlueskyMutedWords(session: BlueskySession): List<MutedWord> {
         return try {
             blueskyApi.getMutedWords(session)
         } catch (e: Exception) {
@@ -140,10 +140,10 @@ class RssRepository(
         }
     }
 
-    suspend fun fetchBlueskyEntries(
-        query: String, 
-        session: BlueskySession? = null,
-        mutedWords: List<MutedWord> = emptyList()
+    override suspend fun fetchBlueskyEntries(
+        query: String,
+        session: BlueskySession?,
+        mutedWords: List<MutedWord>
     ): List<RssItem> {
         val response = try {
             blueskyApi.searchPosts(query, session = session)

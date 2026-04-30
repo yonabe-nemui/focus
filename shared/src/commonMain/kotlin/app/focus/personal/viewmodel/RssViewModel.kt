@@ -3,7 +3,7 @@ package app.focus.personal.viewmodel
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MutedWord
 import app.focus.personal.model.RssItem
-import app.focus.personal.repository.RssRepository
+import app.focus.personal.repository.FeedRepository
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +22,7 @@ sealed class RssUiState {
 enum class RssSource { GOOGLE, HATENA, BLUESKY }
 
 class RssViewModel(
-    private val repository: RssRepository,
+    private val repository: FeedRepository,
     private val scope: CoroutineScope,
     private val dispatcher: CoroutineContext = Dispatchers.Default
 ) {
