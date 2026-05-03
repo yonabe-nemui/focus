@@ -18,4 +18,8 @@ interface FeedRepository {
     fun getSavedMisskeySettings(): MisskeySettings?
     fun saveMisskeySettings(settings: MisskeySettings)
     fun clearMisskeySettings()
+
+    suspend fun fetchMuteWords(): List<String>
+    suspend fun addMuteWord(word: String)
+    suspend fun deleteMuteWord(word: String)
 }

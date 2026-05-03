@@ -45,6 +45,12 @@ class RssViewModel(
     private val _misskeySettings = MutableStateFlow<MisskeySettings?>(null)
     val misskeySettings: StateFlow<MisskeySettings?> = _misskeySettings.asStateFlow()
 
+    private val _muteWords = MutableStateFlow<List<String>>(emptyList())
+    val muteWords: StateFlow<List<String>> = _muteWords.asStateFlow()
+
+    private val _muteWordsLoading = MutableStateFlow(false)
+    val muteWordsLoading: StateFlow<Boolean> = _muteWordsLoading.asStateFlow()
+
     // メモリ上のキャッシュリスト
     private var googleItems = listOf<RssItem>()
     private var hatenaItems = listOf<RssItem>()
@@ -193,6 +199,43 @@ class RssViewModel(
                 repository.fetchBlueskyEntries(query = "IT", session = newSession)
             } catch (retryEx: Exception) {
                 throw retryEx
+            }
+        }
+    }
+
+    fun loadMuteWords() {
+        scope.launch(dispatcher) {
+            _muteWordsLoading.value = true
+            try {
+                _muteWords.value = repository.fetchMuteWords()
+            } catch (e: Exception) {
+                Napier.e("Failed to load mute words", e)
+            } finally {
+                _muteWordsLoading.value = false
+            }
+        }
+    }
+
+    fun addMuteWord(word: String) {
+        val trimmed = word.trim()
+        if (trimmed.isEmpty()) return
+        scope.launch(dispatcher) {
+            try {
+                repository.addMuteWord(trimmed)
+                _muteWords.value = repository.fetchMuteWords()
+            } catch (e: Exception) {
+                Napier.e("Failed to add mute word", e)
+            }
+        }
+    }
+
+    fun deleteMuteWord(word: String) {
+        scope.launch(dispatcher) {
+            try {
+                repository.deleteMuteWord(word)
+                _muteWords.value = _muteWords.value.filter { it != word }
+            } catch (e: Exception) {
+                Napier.e("Failed to delete mute word", e)
             }
         }
     }

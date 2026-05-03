@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -37,7 +38,8 @@ import app.focus.personal.model.MisskeySettings
 @Composable
 fun RssListScreen(
     viewModel: RssViewModel,
-    onLinkClick: (String) -> Unit
+    onLinkClick: (String) -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -49,7 +51,14 @@ fun RssListScreen(
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(title = { Text("News Feed") })
+                TopAppBar(
+                    title = { Text("News Feed") },
+                    actions = {
+                        IconButton(onClick = onNavigateToSettings) {
+                            Icon(Icons.Default.Settings, contentDescription = "設定")
+                        }
+                    }
+                )
                 TabRow(selectedTabIndex = currentSource.ordinal) {
                     Tab(
                         selected = currentSource == RssSource.GOOGLE,

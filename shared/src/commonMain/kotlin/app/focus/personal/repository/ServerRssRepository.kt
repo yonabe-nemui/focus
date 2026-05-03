@@ -98,4 +98,10 @@ class ServerRssRepository(
     override fun clearMisskeySettings() {
         database?.focusDatabaseQueries?.clearMisskeySettings()
     }
+
+    override suspend fun fetchMuteWords(): List<String> = apiClient.getMuteWords()
+
+    override suspend fun addMuteWord(word: String) = apiClient.addMuteWord(word)
+
+    override suspend fun deleteMuteWord(word: String) = apiClient.deleteMuteWord(word)
 }

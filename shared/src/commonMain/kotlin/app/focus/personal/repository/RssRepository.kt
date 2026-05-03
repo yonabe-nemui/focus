@@ -193,6 +193,10 @@ class RssRepository(
         queries?.clearMisskeySettings()
     }
 
+    override suspend fun fetchMuteWords(): List<String> = emptyList()
+    override suspend fun addMuteWord(word: String) = Unit
+    override suspend fun deleteMuteWord(word: String) = Unit
+
     private fun saveFeed(feed: RssFeed, dbCategory: String) {
         val db = database ?: return
         val q = queries ?: return
