@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
 import app.focus.personal.viewmodel.RssViewModel
+import app.focus.personal.model.MisskeySettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +44,7 @@ fun RssListScreen(
     val currentSource by viewModel.currentSource.collectAsState()
     val blueskySession by viewModel.blueskySession.collectAsState()
     val is2faRequired by viewModel.is2faRequired.collectAsState()
+    val misskeySettings by viewModel.misskeySettings.collectAsState()
 
     Scaffold(
         topBar = {
@@ -64,6 +66,11 @@ fun RssListScreen(
                         onClick = { viewModel.setSource(RssSource.BLUESKY) },
                         text = { Text("BlueSky") }
                     )
+                    Tab(
+                        selected = currentSource == RssSource.MISSKEY,
+                        onClick = { viewModel.setSource(RssSource.MISSKEY) },
+                        text = { Text("Misskey") }
+                    )
                 }
             }
         }
@@ -73,11 +80,15 @@ fun RssListScreen(
                 is2faRequired = is2faRequired,
                 uiState = uiState,
                 onLogin = { handle, password, code ->
-                    viewModel.loginBluesky(
-                        handle,
-                        password,
-                        code
-                    )
+                    viewModel.loginBluesky(handle, password, code)
+                },
+                modifier = Modifier.padding(paddingValues)
+            )
+        } else if (currentSource == RssSource.MISSKEY && misskeySettings == null) {
+            MisskeySettingsScreen(
+                uiState = uiState,
+                onSave = { instanceUrl, token ->
+                    viewModel.saveMisskeySettings(instanceUrl, token)
                 },
                 modifier = Modifier.padding(paddingValues)
             )
@@ -113,6 +124,109 @@ fun RssListScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun MisskeySettingsScreen(
+    uiState: RssUiState,
+    onSave: (String, String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var instanceUrl by remember { mutableStateOf("misskey.io") }
+    var apiToken by remember { mutableStateOf("") }
+    var tokenVisible by remember { mutableStateOf(false) }
+    val isLoading = uiState is RssUiState.Loading
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+            .padding(top = 32.dp, bottom = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            text = "Misskey 設定",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = "インスタンスURLを入力してください。APIトークンは任意です（入力するとローカルタイムラインを取得します）。",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 20.dp)
+        )
+
+        if (uiState is RssUiState.Error) {
+            Text(
+                text = uiState.message,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            )
+        }
+
+        TextField(
+            value = instanceUrl,
+            onValueChange = { instanceUrl = it.replace("\n", "") },
+            label = { Text("インスタンスURL (例: misskey.io)") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Uri,
+                autoCorrect = false
+            ),
+            singleLine = true,
+            enabled = !isLoading
+        )
+
+        TextField(
+            value = apiToken,
+            onValueChange = { apiToken = it.replace("\n", "") },
+            label = { Text("APIトークン（任意）") },
+            visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (tokenVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                IconButton(
+                    onClick = { tokenVisible = !tokenVisible },
+                    enabled = !isLoading
+                ) {
+                    Icon(imageVector = image, contentDescription = null)
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrect = false
+            ),
+            singleLine = true,
+            enabled = !isLoading
+        )
+
+        Button(
+            onClick = {
+                onSave(instanceUrl.trim(), apiToken.trim().takeIf { it.isNotEmpty() })
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = instanceUrl.isNotEmpty() && !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.height(20.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("接続")
             }
         }
     }

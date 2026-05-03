@@ -6,6 +6,7 @@ import app.focus.personal.db.RssChannelEntity
 import app.focus.personal.db.RssItemEntity
 import app.focus.personal.model.BlueskySearchResponse
 import app.focus.personal.model.BlueskySession
+import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.MutedWord
 import app.focus.personal.model.RssFeed
 import app.focus.personal.model.RssItem
@@ -13,6 +14,7 @@ import app.focus.personal.model.toRssItem
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
+import app.focus.personal.network.MisskeyClient
 import app.focus.personal.util.DateUtils
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -24,7 +26,8 @@ class RssRepository(
     private val database: FocusDatabase?,
     private val googleApi: GoogleRssClient,
     private val hatenaApi: HatenaRssClient,
-    private val blueskyApi: BlueskyClient
+    private val blueskyApi: BlueskyClient,
+    private val misskeyApi: MisskeyClient
 ) : FeedRepository {
     private val queries = database?.focusDatabaseQueries
 
@@ -132,35 +135,62 @@ class RssRepository(
         return session
     }
 
-    override suspend fun getBlueskyMutedWords(session: BlueskySession): List<MutedWord> {
-        return try {
-            blueskyApi.getMutedWords(session)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
+    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> {
+        val mutedWords = if (session != null) {
+            try { blueskyApi.getMutedWords(session) } catch (e: Exception) { emptyList() }
+        } else emptyList<MutedWord>()
 
-    override suspend fun fetchBlueskyEntries(
-        query: String,
-        session: BlueskySession?,
-        mutedWords: List<MutedWord>
-    ): List<RssItem> {
         val response = try {
             blueskyApi.searchPosts(query, session = session)
         } catch (e: Exception) {
             BlueskySearchResponse(emptyList())
         }
-        
+
         return response.posts
             .filter { post ->
-                // 「見たくないものは見ない」フィルタリング
                 val text = post.record.text.lowercase()
-                mutedWords.none { word -> 
+                mutedWords.none { word ->
                     word.value.lowercase().isNotEmpty() && text.contains(word.value.lowercase())
                 }
             }
             .map { it.toRssItem() }
             .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+    }
+
+    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> {
+        val token = settings.apiToken
+        val notes = try {
+            if (token != null) {
+                misskeyApi.getLocalTimeline(settings.instanceUrl, token)
+            } else {
+                misskeyApi.searchNotes(settings.instanceUrl, query)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+        return notes
+            .map { it.toRssItem(settings.instanceUrl) }
+            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+    }
+
+    override fun getSavedMisskeySettings(): MisskeySettings? {
+        return queries?.getActiveMisskeySettings()?.executeAsOneOrNull()?.let { entity ->
+            MisskeySettings(
+                instanceUrl = entity.instanceUrl,
+                apiToken = entity.apiToken
+            )
+        }
+    }
+
+    override fun saveMisskeySettings(settings: MisskeySettings) {
+        queries?.upsertMisskeySettings(
+            instanceUrl = settings.instanceUrl,
+            apiToken = settings.apiToken
+        )
+    }
+
+    override fun clearMisskeySettings() {
+        queries?.clearMisskeySettings()
     }
 
     private fun saveFeed(feed: RssFeed, dbCategory: String) {

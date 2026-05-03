@@ -8,6 +8,7 @@ import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
+import app.focus.personal.network.MisskeyClient
 import app.focus.personal.repository.RssRepository
 import app.focus.personal.viewmodel.RssViewModel
 import io.github.aakira.napier.DebugAntilog
@@ -32,7 +33,8 @@ fun MainViewController() = ComposeUIViewController {
         val googleApi = GoogleRssClient(client)
         val hatenaApi = HatenaRssClient(client)
         val blueskyApi = BlueskyClient(client)
-        val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi)
+        val misskeyApi = MisskeyClient(client)
+        val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi, misskeyApi)
         RssViewModel(repository, scope)
     }
 

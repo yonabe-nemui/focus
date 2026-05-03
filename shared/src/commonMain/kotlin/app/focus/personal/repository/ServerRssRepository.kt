@@ -2,12 +2,10 @@ package app.focus.personal.repository
 
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.model.BlueskySession
-import app.focus.personal.model.MutedWord
+import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.RssItem
-import app.focus.personal.model.toRssItem
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.FocusApiClient
-import app.focus.personal.util.DateUtils
 
 class ServerRssRepository(
     private val database: FocusDatabase?,
@@ -21,21 +19,12 @@ class ServerRssRepository(
 
     override suspend fun fetchAllHatenaEntries(): List<RssItem> = apiClient.fetchHatenaFeed()
 
-    override suspend fun fetchBlueskyEntries(
-        query: String,
-        session: BlueskySession?,
-        mutedWords: List<MutedWord>
-    ): List<RssItem> {
-        val response = blueskyApi.searchPosts(query, session = session)
-        return response.posts
-            .filter { post ->
-                val text = post.record.text.lowercase()
-                mutedWords.none { word ->
-                    word.value.lowercase().isNotEmpty() && text.contains(word.value.lowercase())
-                }
-            }
-            .map { it.toRssItem() }
-            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> {
+        return try {
+            apiClient.fetchBlueskyFeed(session?.accessJwt ?: "", query)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     override suspend fun loginBluesky(
@@ -82,11 +71,31 @@ class ServerRssRepository(
         return session
     }
 
-    override suspend fun getBlueskyMutedWords(session: BlueskySession): List<MutedWord> {
+    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> {
         return try {
-            blueskyApi.getMutedWords(session)
+            apiClient.fetchMisskeyFeed(settings.instanceUrl, settings.apiToken, query)
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    override fun getSavedMisskeySettings(): MisskeySettings? {
+        return database?.focusDatabaseQueries?.getActiveMisskeySettings()?.executeAsOneOrNull()?.let { entity ->
+            MisskeySettings(
+                instanceUrl = entity.instanceUrl,
+                apiToken = entity.apiToken
+            )
+        }
+    }
+
+    override fun saveMisskeySettings(settings: MisskeySettings) {
+        database?.focusDatabaseQueries?.upsertMisskeySettings(
+            instanceUrl = settings.instanceUrl,
+            apiToken = settings.apiToken
+        )
+    }
+
+    override fun clearMisskeySettings() {
+        database?.focusDatabaseQueries?.clearMisskeySettings()
     }
 }

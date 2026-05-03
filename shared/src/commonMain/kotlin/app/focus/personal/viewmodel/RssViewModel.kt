@@ -1,7 +1,7 @@
 package app.focus.personal.viewmodel
 
 import app.focus.personal.model.BlueskySession
-import app.focus.personal.model.MutedWord
+import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.RssItem
 import app.focus.personal.repository.FeedRepository
 import io.github.aakira.napier.Napier
@@ -19,7 +19,7 @@ sealed class RssUiState {
     data class Error(val message: String) : RssUiState()
 }
 
-enum class RssSource { GOOGLE, HATENA, BLUESKY }
+enum class RssSource { GOOGLE, HATENA, BLUESKY, MISSKEY }
 
 class RssViewModel(
     private val repository: FeedRepository,
@@ -42,15 +42,18 @@ class RssViewModel(
     private val _is2faRequired = MutableStateFlow(false)
     val is2faRequired: StateFlow<Boolean> = _is2faRequired.asStateFlow()
 
-    private val _mutedWords = MutableStateFlow<List<MutedWord>>(emptyList())
+    private val _misskeySettings = MutableStateFlow<MisskeySettings?>(null)
+    val misskeySettings: StateFlow<MisskeySettings?> = _misskeySettings.asStateFlow()
 
     // メモリ上のキャッシュリスト
     private var googleItems = listOf<RssItem>()
     private var hatenaItems = listOf<RssItem>()
     private var blueskyItems = listOf<RssItem>()
+    private var misskeyItems = listOf<RssItem>()
 
     init {
         checkSavedSession()
+        checkSavedMisskeySettings()
         loadAllTopics()
     }
 
@@ -58,27 +61,13 @@ class RssViewModel(
         val savedSession = repository.getSavedBlueskySession()
         if (savedSession != null) {
             _blueskySession.value = savedSession
-            // 非同期でプレファレンスを取得（セッション有効チェックも兼ねる）
-            scope.launch(dispatcher) {
-                try {
-                    _mutedWords.value = repository.getBlueskyMutedWords(savedSession)
-                } catch (e: Exception) {
-                    // セッション切れの可能性。リフレッシュを試みる
-                    tryRefreshSession(savedSession.refreshJwt)
-                }
-            }
         }
     }
 
-    private suspend fun tryRefreshSession(refreshJwt: String) {
-        try {
-            val newSession = repository.refreshBlueskySession(refreshJwt)
-            _blueskySession.value = newSession
-            _mutedWords.value = repository.getBlueskyMutedWords(newSession)
-        } catch (e: Exception) {
-            // リフレッシュも失敗した場合はログアウト状態にする
-            _blueskySession.value = null
-            repository.clearBlueskySession()
+    private fun checkSavedMisskeySettings() {
+        val saved = repository.getSavedMisskeySettings()
+        if (saved != null) {
+            _misskeySettings.value = saved
         }
     }
 
@@ -90,11 +79,16 @@ class RssViewModel(
             RssSource.GOOGLE -> googleItems
             RssSource.HATENA -> hatenaItems
             RssSource.BLUESKY -> blueskyItems
+            RssSource.MISSKEY -> misskeyItems
         }
-        
-        if (cachedItems.isEmpty() && source != RssSource.BLUESKY) {
-            loadAllTopics()
-        } else if (source == RssSource.BLUESKY && _blueskySession.value != null && cachedItems.isEmpty()) {
+
+        val needsFetch = when (source) {
+            RssSource.BLUESKY -> _blueskySession.value != null && cachedItems.isEmpty()
+            RssSource.MISSKEY -> _misskeySettings.value != null && cachedItems.isEmpty()
+            else -> cachedItems.isEmpty()
+        }
+
+        if (needsFetch) {
             loadAllTopics()
         } else {
             _uiState.value = RssUiState.Success(cachedItems)
@@ -110,7 +104,6 @@ class RssViewModel(
                 Napier.i("BlueSky login successful for: ${session.handle}")
                 _blueskySession.value = session
                 _is2faRequired.value = false
-                _mutedWords.value = repository.getBlueskyMutedWords(session)
                 loadAllTopics()
             } catch (e: Exception) {
                 Napier.e("BlueSky login failed", e)
@@ -131,9 +124,30 @@ class RssViewModel(
         }
     }
 
+    fun saveMisskeySettings(instanceUrl: String, apiToken: String?) {
+        val settings = MisskeySettings(
+            instanceUrl = instanceUrl.trim().trimEnd('/'),
+            apiToken = apiToken?.trim()?.takeIf { it.isNotEmpty() }
+        )
+        repository.saveMisskeySettings(settings)
+        _misskeySettings.value = settings
+        misskeyItems = emptyList()
+        if (_currentSource.value == RssSource.MISSKEY) {
+            loadAllTopics()
+        }
+    }
+
+    fun clearMisskeySettings() {
+        _misskeySettings.value = null
+        misskeyItems = emptyList()
+        repository.clearMisskeySettings()
+        if (_currentSource.value == RssSource.MISSKEY) {
+            _uiState.value = RssUiState.Success(emptyList())
+        }
+    }
+
     fun logoutBluesky() {
         _blueskySession.value = null
-        _mutedWords.value = emptyList()
         blueskyItems = emptyList()
         repository.clearBlueskySession()
         if (_currentSource.value == RssSource.BLUESKY) {
@@ -149,9 +163,8 @@ class RssViewModel(
                 val newItems = when (source) {
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
-                    RssSource.BLUESKY -> {
-                        fetchBlueskyWithRetry()
-                    }
+                    RssSource.BLUESKY -> fetchBlueskyWithRetry()
+                    RssSource.MISSKEY -> fetchMisskeyEntries()
                 }
                 updateList(newItems, source)
             } catch (e: Exception) {
@@ -160,26 +173,25 @@ class RssViewModel(
         }
     }
 
+    private suspend fun fetchMisskeyEntries(): List<RssItem> {
+        val settings = _misskeySettings.value ?: return emptyList()
+        return try {
+            repository.fetchMisskeyEntries(query = "IT", settings = settings)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     private suspend fun fetchBlueskyWithRetry(): List<RssItem> {
         val session = _blueskySession.value ?: return emptyList()
         return try {
-            repository.fetchBlueskyEntries(
-                query = "IT",
-                session = session,
-                mutedWords = _mutedWords.value
-            )
+            repository.fetchBlueskyEntries(query = "IT", session = session)
         } catch (e: Exception) {
-            // エラー時（セッション切れ等）に1回だけリフレッシュして再試行
             try {
                 val newSession = repository.refreshBlueskySession(session.refreshJwt)
                 _blueskySession.value = newSession
-                repository.fetchBlueskyEntries(
-                    query = "IT",
-                    session = newSession,
-                    mutedWords = repository.getBlueskyMutedWords(newSession)
-                )
+                repository.fetchBlueskyEntries(query = "IT", session = newSession)
             } catch (retryEx: Exception) {
-                // リトライも失敗した場合は空リスト（またはエラー）
                 throw retryEx
             }
         }
@@ -193,9 +205,8 @@ class RssViewModel(
                 val newItems = when (source) {
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
-                    RssSource.BLUESKY -> {
-                        fetchBlueskyWithRetry()
-                    }
+                    RssSource.BLUESKY -> fetchBlueskyWithRetry()
+                    RssSource.MISSKEY -> fetchMisskeyEntries()
                 }
                 updateList(newItems, source)
             } catch (e: Exception) {
@@ -211,23 +222,25 @@ class RssViewModel(
             RssSource.GOOGLE -> googleItems
             RssSource.HATENA -> hatenaItems
             RssSource.BLUESKY -> blueskyItems
+            RssSource.MISSKEY -> misskeyItems
         }
 
         // 重複を排除してマージ
         val merged = (newItems + currentItems)
             .distinctBy { it.link }
-            .sortedByDescending { 
-                if (source == RssSource.HATENA || source == RssSource.BLUESKY) {
+            .sortedByDescending {
+                if (source == RssSource.HATENA || source == RssSource.BLUESKY || source == RssSource.MISSKEY) {
                     app.focus.personal.util.DateUtils.parseIso8601ToMillis(it.pubDate)
                 } else {
                     app.focus.personal.util.DateUtils.parseRfc822ToMillis(it.pubDate)
                 }
             }
-        
+
         when (source) {
             RssSource.GOOGLE -> googleItems = merged
             RssSource.HATENA -> hatenaItems = merged
             RssSource.BLUESKY -> blueskyItems = merged
+            RssSource.MISSKEY -> misskeyItems = merged
         }
 
         if (_currentSource.value == source) {

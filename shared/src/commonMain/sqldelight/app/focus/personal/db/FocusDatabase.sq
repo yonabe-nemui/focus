@@ -54,6 +54,13 @@ LIMIT ? OFFSET ?;
 deleteChannelByCategory:
 DELETE FROM RssChannelEntity WHERE category = ?;
 
+CREATE TABLE MisskeySettingsEntity (
+    id INTEGER PRIMARY KEY,
+    instanceUrl TEXT NOT NULL,
+    apiToken TEXT,
+    isActive INTEGER NOT NULL DEFAULT 0
+);
+
 -- Bluesky Session Queries
 upsertBlueskySession:
 INSERT OR REPLACE INTO BlueskySessionEntity(handle, accessJwt, refreshJwt, did, isActive)
@@ -67,3 +74,14 @@ UPDATE BlueskySessionEntity SET isActive = 0;
 
 deleteBlueskySession:
 DELETE FROM BlueskySessionEntity WHERE handle = ?;
+
+-- Misskey Settings Queries
+upsertMisskeySettings:
+INSERT OR REPLACE INTO MisskeySettingsEntity(id, instanceUrl, apiToken, isActive)
+VALUES (1, ?, ?, 1);
+
+getActiveMisskeySettings:
+SELECT * FROM MisskeySettingsEntity WHERE isActive = 1 LIMIT 1;
+
+clearMisskeySettings:
+DELETE FROM MisskeySettingsEntity;
