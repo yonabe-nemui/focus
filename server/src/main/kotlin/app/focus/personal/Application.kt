@@ -2,6 +2,7 @@ package app.focus.personal
 
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
+import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssItem
 import app.focus.personal.network.AddMuteWordRequest
 import app.focus.personal.network.BlueskyClient
@@ -46,6 +47,9 @@ private fun List<RssItem>.applyMuteWords(): List<RssItem> {
     }
 }
 
+private fun PagedFeedResponse.applyMuteWords(): PagedFeedResponse =
+    PagedFeedResponse(items.applyMuteWords(), nextCursor)
+
 fun Application.module() {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
@@ -79,18 +83,26 @@ fun Application.module() {
                 call.respond(items)
             }
             post("/feed/bluesky") {
-                val request = call.receive<BlueSkyFeedRequest>()
-                val session = if (request.accessJwt.isNotEmpty()) {
-                    BlueskySession(accessJwt = request.accessJwt, refreshJwt = "", handle = "", did = "")
-                } else null
-                val items = repository.fetchBlueskyEntries(request.query, session).applyMuteWords()
-                call.respond(items)
+                try {
+                    val request = call.receive<BlueSkyFeedRequest>()
+                    val session = if (request.accessJwt.isNotEmpty()) {
+                        BlueskySession(accessJwt = request.accessJwt, refreshJwt = "", handle = "", did = "")
+                    } else null
+                    val pagedResult = repository.fetchBlueskyPage(request.query, session, request.cursor)
+                    call.respond(pagedResult.applyMuteWords())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "error")))
+                }
             }
             post("/feed/misskey") {
-                val request = call.receive<MisskeyFeedRequest>()
-                val settings = MisskeySettings(instanceUrl = request.instanceUrl, apiToken = request.apiToken)
-                val items = repository.fetchMisskeyEntries(request.query, settings).applyMuteWords()
-                call.respond(items)
+                try {
+                    val request = call.receive<MisskeyFeedRequest>()
+                    val settings = MisskeySettings(instanceUrl = request.instanceUrl, apiToken = request.apiToken)
+                    val items = repository.fetchMisskeyPage(request.query, settings, request.untilId).applyMuteWords()
+                    call.respond(items)
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "error")))
+                }
             }
             get("/mutewords") {
                 call.respond(muteWordStore.toList())

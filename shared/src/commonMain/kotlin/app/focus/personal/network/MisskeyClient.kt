@@ -17,31 +17,35 @@ class MisskeyClient(private val client: HttpClient) {
         instanceUrl: String,
         query: String,
         limit: Int = 20,
-        token: String? = null
+        token: String? = null,
+        untilId: String? = null
     ): List<MisskeyNote> {
         val requestBody = buildJsonObject {
             put("query", query)
             put("limit", limit)
             if (token != null) put("i", token)
+            if (untilId != null) put("untilId", untilId)
         }
-        Napier.d("Misskey searchNotes: https://$instanceUrl/api/notes/search query=$query")
+        Napier.d("Misskey searchNotes: https://$instanceUrl/api/notes/search query=$query untilId=$untilId")
         return client.post("https://$instanceUrl/api/notes/search") {
             contentType(ContentType.Application.Json)
             setBody(requestBody)
         }.body()
     }
 
-    suspend fun getLocalTimeline(
+    suspend fun getHomeTimeline(
         instanceUrl: String,
         token: String,
-        limit: Int = 20
+        limit: Int = 20,
+        untilId: String? = null
     ): List<MisskeyNote> {
         val requestBody = buildJsonObject {
             put("limit", limit)
             put("i", token)
+            if (untilId != null) put("untilId", untilId)
         }
-        Napier.d("Misskey getLocalTimeline: https://$instanceUrl/api/notes/local-timeline")
-        return client.post("https://$instanceUrl/api/notes/local-timeline") {
+        Napier.d("Misskey getHomeTimeline: https://$instanceUrl/api/notes/timeline untilId=$untilId")
+        return client.post("https://$instanceUrl/api/notes/timeline") {
             contentType(ContentType.Application.Json)
             setBody(requestBody)
         }.body()

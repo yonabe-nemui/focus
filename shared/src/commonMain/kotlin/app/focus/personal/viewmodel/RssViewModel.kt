@@ -2,6 +2,7 @@ package app.focus.personal.viewmodel
 
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
+import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssItem
 import app.focus.personal.repository.FeedRepository
 import io.github.aakira.napier.Napier
@@ -45,11 +46,21 @@ class RssViewModel(
     private val _misskeySettings = MutableStateFlow<MisskeySettings?>(null)
     val misskeySettings: StateFlow<MisskeySettings?> = _misskeySettings.asStateFlow()
 
+    private val _blueskySearchQuery = MutableStateFlow("")
+    private val _misskeySearchQuery = MutableStateFlow("")
+
     private val _muteWords = MutableStateFlow<List<String>>(emptyList())
     val muteWords: StateFlow<List<String>> = _muteWords.asStateFlow()
 
     private val _muteWordsLoading = MutableStateFlow(false)
     val muteWordsLoading: StateFlow<Boolean> = _muteWordsLoading.asStateFlow()
+
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    // ページネーション用カーソル・ID
+    private var blueskyNextCursor: String? = null
+    private var misskeyLastItemId: String? = null
 
     // メモリ上のキャッシュリスト
     private var googleItems = listOf<RssItem>()
@@ -80,7 +91,7 @@ class RssViewModel(
     fun setSource(source: RssSource) {
         if (_currentSource.value == source) return
         _currentSource.value = source
-        
+
         val cachedItems = when (source) {
             RssSource.GOOGLE -> googleItems
             RssSource.HATENA -> hatenaItems
@@ -95,6 +106,7 @@ class RssViewModel(
         }
 
         if (needsFetch) {
+            _uiState.value = RssUiState.Loading
             loadAllTopics()
         } else {
             _uiState.value = RssUiState.Success(cachedItems)
@@ -169,8 +181,16 @@ class RssViewModel(
                 val newItems = when (source) {
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
-                    RssSource.BLUESKY -> fetchBlueskyWithRetry()
-                    RssSource.MISSKEY -> fetchMisskeyEntries()
+                    RssSource.BLUESKY -> {
+                        val result = fetchBlueskyPageWithRetry(null)
+                        blueskyNextCursor = result.nextCursor
+                        result.items
+                    }
+                    RssSource.MISSKEY -> {
+                        val items = fetchMisskeyEntries()
+                        misskeyLastItemId = items.lastOrNull()?.guid
+                        items
+                    }
                 }
                 updateList(newItems, source)
             } catch (e: Exception) {
@@ -179,28 +199,105 @@ class RssViewModel(
         }
     }
 
+    fun loadMore() {
+        val source = _currentSource.value
+        if (_isLoadingMore.value) return
+        if (source != RssSource.BLUESKY && source != RssSource.MISSKEY) return
+
+        scope.launch(dispatcher) {
+            _isLoadingMore.value = true
+            try {
+                when (source) {
+                    RssSource.BLUESKY -> {
+                        val cursor = blueskyNextCursor ?: return@launch
+                        val result = fetchBlueskyPageWithRetry(cursor)
+                        if (result.items.isNotEmpty()) {
+                            val combined = (blueskyItems + result.items).distinctBy { it.link }
+                            blueskyItems = combined
+                            blueskyNextCursor = result.nextCursor
+                            if (_currentSource.value == RssSource.BLUESKY) {
+                                _uiState.value = RssUiState.Success(combined)
+                            }
+                        } else {
+                            blueskyNextCursor = null
+                        }
+                    }
+                    RssSource.MISSKEY -> {
+                        val untilId = misskeyLastItemId ?: return@launch
+                        val settings = _misskeySettings.value ?: return@launch
+                        val newItems = repository.fetchMisskeyPage(_misskeySearchQuery.value, settings, untilId)
+                        if (newItems.isNotEmpty()) {
+                            val combined = (misskeyItems + newItems).distinctBy { it.link }
+                            misskeyItems = combined
+                            misskeyLastItemId = combined.lastOrNull()?.guid
+                            if (_currentSource.value == RssSource.MISSKEY) {
+                                _uiState.value = RssUiState.Success(combined)
+                            }
+                        } else {
+                            misskeyLastItemId = null
+                        }
+                    }
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                Napier.e("loadMore failed", e)
+            } finally {
+                _isLoadingMore.value = false
+            }
+        }
+    }
+
     private suspend fun fetchMisskeyEntries(): List<RssItem> {
         val settings = _misskeySettings.value ?: return emptyList()
         return try {
-            repository.fetchMisskeyEntries(query = "IT", settings = settings)
+            repository.fetchMisskeyEntries(query = _misskeySearchQuery.value, settings = settings)
         } catch (e: Exception) {
             emptyList()
         }
     }
 
-    private suspend fun fetchBlueskyWithRetry(): List<RssItem> {
-        val session = _blueskySession.value ?: return emptyList()
+    private suspend fun fetchBlueskyPageWithRetry(cursor: String?): PagedFeedResponse {
+        val session = _blueskySession.value ?: run {
+            Napier.w("BlueSky: no session, skipping fetch")
+            return PagedFeedResponse(emptyList())
+        }
+        val query = _blueskySearchQuery.value
+        Napier.d("BlueSky: fetching page query='$query' cursor=$cursor")
         return try {
-            repository.fetchBlueskyEntries(query = "IT", session = session)
+            val result = repository.fetchBlueskyPage(query = query, session = session, cursor = cursor)
+            Napier.i("BlueSky: fetched ${result.items.size} items")
+            result
         } catch (e: Exception) {
+            Napier.w("BlueSky: fetch failed (${e.message}), refreshing token")
             try {
                 val newSession = repository.refreshBlueskySession(session.refreshJwt)
                 _blueskySession.value = newSession
-                repository.fetchBlueskyEntries(query = "IT", session = newSession)
+                Napier.i("BlueSky: token refreshed, retrying fetch")
+                val result = repository.fetchBlueskyPage(query = query, session = newSession, cursor = cursor)
+                Napier.i("BlueSky: retry fetched ${result.items.size} items")
+                result
             } catch (retryEx: Exception) {
+                Napier.e("BlueSky: retry also failed: ${retryEx.message}")
                 throw retryEx
             }
         }
+    }
+
+    fun searchFeed(query: String) {
+        when (_currentSource.value) {
+            RssSource.BLUESKY -> {
+                _blueskySearchQuery.value = query
+                blueskyItems = emptyList()
+                blueskyNextCursor = null
+            }
+            RssSource.MISSKEY -> {
+                _misskeySearchQuery.value = query
+                misskeyItems = emptyList()
+                misskeyLastItemId = null
+            }
+            else -> return
+        }
+        loadAllTopics()
     }
 
     fun loadMuteWords() {
@@ -243,13 +340,26 @@ class RssViewModel(
     fun refresh() {
         scope.launch(dispatcher) {
             _isRefreshing.value = true
+            val source = _currentSource.value
+            when (source) {
+                RssSource.BLUESKY -> { blueskyNextCursor = null; blueskyItems = emptyList() }
+                RssSource.MISSKEY -> { misskeyLastItemId = null; misskeyItems = emptyList() }
+                else -> {}
+            }
             try {
-                val source = _currentSource.value
                 val newItems = when (source) {
                     RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
                     RssSource.HATENA -> repository.fetchAllHatenaEntries()
-                    RssSource.BLUESKY -> fetchBlueskyWithRetry()
-                    RssSource.MISSKEY -> fetchMisskeyEntries()
+                    RssSource.BLUESKY -> {
+                        val result = fetchBlueskyPageWithRetry(null)
+                        blueskyNextCursor = result.nextCursor
+                        result.items
+                    }
+                    RssSource.MISSKEY -> {
+                        val items = fetchMisskeyEntries()
+                        misskeyLastItemId = items.lastOrNull()?.guid
+                        items
+                    }
                 }
                 updateList(newItems, source)
             } catch (e: Exception) {

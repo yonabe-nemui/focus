@@ -1,8 +1,10 @@
 package app.focus.personal.network
 
-import app.focus.personal.model.BlueskySession
-import app.focus.personal.model.MutedWord
+import app.focus.personal.model.BlueskyFeedViewPost
 import app.focus.personal.model.BlueskySearchResponse
+import app.focus.personal.model.BlueskySession
+import app.focus.personal.model.BlueskyTimelineResponse
+import app.focus.personal.model.MutedWord
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -98,20 +100,41 @@ class BlueskyClient(private val client: HttpClient) {
         return emptyList()
     }
 
+    suspend fun getTimeline(session: BlueskySession, limit: Int = 50, cursor: String? = null): BlueskyTimelineResponse {
+        val response = client.get("$baseUrl/app.bsky.feed.getTimeline") {
+            header("Authorization", "Bearer ${session.accessJwt}")
+            parameter("limit", limit)
+            if (cursor != null) parameter("cursor", cursor)
+        }
+        Napier.d("getTimeline: status=${response.status}")
+        if (response.status != HttpStatusCode.OK) {
+            val errorBody = response.body<String>()
+            Napier.e("getTimeline failed [${response.status}]: $errorBody")
+            throw Exception("getTimeline failed [${response.status}]: $errorBody")
+        }
+        val result = response.body<BlueskyTimelineResponse>()
+        Napier.d("getTimeline: got ${result.feed.size} posts")
+        return result
+    }
+
     suspend fun searchPosts(
-        query: String, 
-        lang: String = "ja", 
-        sort: String = "top",
-        session: BlueskySession? = null
+        query: String,
+        sort: String = "latest",
+        session: BlueskySession? = null,
+        cursor: String? = null
     ): BlueskySearchResponse {
         val url = if (session != null) baseUrl else publicApiUrl
         val response = client.get("$url/app.bsky.feed.searchPosts") {
             parameter("q", query)
-            parameter("lang", lang)
             parameter("sort", sort)
             if (session != null) {
                 header("Authorization", "Bearer ${session.accessJwt}")
             }
+            if (cursor != null) parameter("cursor", cursor)
+        }
+        if (response.status != HttpStatusCode.OK) {
+            val errorBody = response.body<String>()
+            throw Exception("searchPosts failed [${response.status}]: $errorBody")
         }
         return response.body()
     }

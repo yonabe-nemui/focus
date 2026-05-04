@@ -3,6 +3,7 @@ package app.focus.personal.repository
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
+import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssItem
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.FocusApiClient
@@ -19,13 +20,11 @@ class ServerRssRepository(
 
     override suspend fun fetchAllHatenaEntries(): List<RssItem> = apiClient.fetchHatenaFeed()
 
-    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> {
-        return try {
-            apiClient.fetchBlueskyFeed(session?.accessJwt ?: "", query)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
+    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> =
+        fetchBlueskyPage(query, session, null).items
+
+    override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse =
+        apiClient.fetchBlueskyPage(session?.accessJwt ?: "", query, cursor)
 
     override suspend fun loginBluesky(
         handle: String,
@@ -71,13 +70,11 @@ class ServerRssRepository(
         return session
     }
 
-    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> {
-        return try {
-            apiClient.fetchMisskeyFeed(settings.instanceUrl, settings.apiToken, query)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
+    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> =
+        fetchMisskeyPage(query, settings, null)
+
+    override suspend fun fetchMisskeyPage(query: String, settings: MisskeySettings, untilId: String?): List<RssItem> =
+        apiClient.fetchMisskeyPage(settings.instanceUrl, settings.apiToken, query, untilId)
 
     override fun getSavedMisskeySettings(): MisskeySettings? {
         return database?.focusDatabaseQueries?.getActiveMisskeySettings()?.executeAsOneOrNull()?.let { entity ->

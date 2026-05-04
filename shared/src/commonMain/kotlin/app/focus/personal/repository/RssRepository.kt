@@ -4,10 +4,11 @@ import app.focus.personal.db.BlueskySessionEntity
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.db.RssChannelEntity
 import app.focus.personal.db.RssItemEntity
-import app.focus.personal.model.BlueskySearchResponse
+import app.focus.personal.model.BlueskyPost
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.MutedWord
+import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssFeed
 import app.focus.personal.model.RssItem
 import app.focus.personal.model.toRssItem
@@ -135,38 +136,53 @@ class RssRepository(
         return session
     }
 
-    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> {
+    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> =
+        fetchBlueskyPage(query, session, null).items
+
+    override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse {
         val mutedWords = if (session != null) {
             try { blueskyApi.getMutedWords(session) } catch (e: Exception) { emptyList() }
         } else emptyList<MutedWord>()
 
-        val response = try {
-            blueskyApi.searchPosts(query, session = session)
-        } catch (e: Exception) {
-            BlueskySearchResponse(emptyList())
+        var posts: List<BlueskyPost> = emptyList()
+        var nextCursor: String? = null
+        when {
+            session != null && query.isEmpty() -> {
+                val response = blueskyApi.getTimeline(session, cursor = cursor)
+                posts = response.feed.map { it.post }
+                nextCursor = response.cursor
+            }
+            query.isNotEmpty() -> {
+                val response = blueskyApi.searchPosts(query, session = session, cursor = cursor)
+                posts = response.posts
+                nextCursor = response.cursor
+            }
         }
 
-        return response.posts
+        val items = posts
             .filter { post ->
                 val text = post.record.text.lowercase()
-                mutedWords.none { word ->
-                    word.value.lowercase().isNotEmpty() && text.contains(word.value.lowercase())
-                }
+                mutedWords.none { word -> word.value.lowercase().isNotEmpty() && text.contains(word.value.lowercase()) }
             }
             .map { it.toRssItem() }
             .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+
+        return PagedFeedResponse(items, nextCursor)
     }
 
-    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> {
+    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> =
+        fetchMisskeyPage(query, settings, null)
+
+    override suspend fun fetchMisskeyPage(query: String, settings: MisskeySettings, untilId: String?): List<RssItem> {
         val token = settings.apiToken
-        val notes = try {
-            if (token != null) {
-                misskeyApi.getLocalTimeline(settings.instanceUrl, token)
-            } else {
-                misskeyApi.searchNotes(settings.instanceUrl, query)
-            }
-        } catch (e: Exception) {
-            emptyList()
+        val notes = when {
+            token != null && query.isEmpty() ->
+                try { misskeyApi.getHomeTimeline(settings.instanceUrl, token, untilId = untilId) } catch (e: Exception) { emptyList() }
+            token != null && query.isNotEmpty() ->
+                try { misskeyApi.searchNotes(settings.instanceUrl, query, token = token, untilId = untilId) } catch (e: Exception) { emptyList() }
+            query.isNotEmpty() ->
+                try { misskeyApi.searchNotes(settings.instanceUrl, query, untilId = untilId) } catch (e: Exception) { emptyList() }
+            else -> emptyList()
         }
         return notes
             .map { it.toRssItem(settings.instanceUrl) }

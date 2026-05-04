@@ -6,13 +6,18 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -25,6 +30,7 @@ import androidx.compose.ui.platform.LocalAutofill
 import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -43,10 +49,14 @@ fun RssListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val currentSource by viewModel.currentSource.collectAsState()
     val blueskySession by viewModel.blueskySession.collectAsState()
     val is2faRequired by viewModel.is2faRequired.collectAsState()
     val misskeySettings by viewModel.misskeySettings.collectAsState()
+
+    var localBlueskyQuery by remember { mutableStateOf("") }
+    var localMisskeyQuery by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -102,35 +112,95 @@ fun RssListScreen(
                 modifier = Modifier.padding(paddingValues)
             )
         } else {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                when (val state = uiState) {
-                    is RssUiState.Loading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    }
-
-                    is RssUiState.Success -> {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 8.dp)
-                        ) {
-                            items(state.items) { item ->
-                                RssItemCard(
-                                    item = item,
-                                    onClick = onLinkClick
-                                )
+                if (currentSource == RssSource.BLUESKY || currentSource == RssSource.MISSKEY) {
+                    val localQuery = if (currentSource == RssSource.BLUESKY) localBlueskyQuery else localMisskeyQuery
+                    val onQueryChange: (String) -> Unit = if (currentSource == RssSource.BLUESKY)
+                        { q -> localBlueskyQuery = q } else { q -> localMisskeyQuery = q }
+                    OutlinedTextField(
+                        value = localQuery,
+                        onValueChange = onQueryChange,
+                        placeholder = { Text("検索...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (localQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    onQueryChange("")
+                                    viewModel.searchFeed("")
+                                }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "クリア")
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { viewModel.searchFeed(localQuery) })
+                    )
+                }
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    when (val state = uiState) {
+                        is RssUiState.Loading -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
                         }
-                    }
-                    is RssUiState.Error -> {
-                        Text(
-                            text = "Error: ${state.message}",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                        is RssUiState.Success -> {
+                            val lazyListState = rememberLazyListState()
+
+                            val shouldLoadMore by remember {
+                                derivedStateOf {
+                                    val layoutInfo = lazyListState.layoutInfo
+                                    val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
+                                    lastVisible >= layoutInfo.totalItemsCount - 3
+                                }
+                            }
+
+                            LaunchedEffect(shouldLoadMore) {
+                                if (shouldLoadMore && !isLoadingMore) viewModel.loadMore()
+                            }
+
+                            LazyColumn(
+                                state = lazyListState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp)
+                            ) {
+                                items(state.items) { item ->
+                                    RssItemCard(
+                                        item = item,
+                                        onClick = onLinkClick
+                                    )
+                                }
+                                if (isLoadingMore) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        is RssUiState.Error -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(text = "Error: ${state.message}")
+                            }
+                        }
                     }
                 }
             }

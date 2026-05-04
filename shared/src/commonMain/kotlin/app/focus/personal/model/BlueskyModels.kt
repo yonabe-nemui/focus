@@ -28,6 +28,17 @@ data class BlueskySearchResponse(
 )
 
 @Serializable
+data class BlueskyTimelineResponse(
+    val feed: List<BlueskyFeedViewPost> = emptyList(),
+    val cursor: String? = null
+)
+
+@Serializable
+data class BlueskyFeedViewPost(
+    val post: BlueskyPost
+)
+
+@Serializable
 data class BlueskyPost(
     val uri: String,
     val cid: String,
@@ -47,8 +58,8 @@ data class BlueskyProfile(
 
 @Serializable
 data class BlueskyRecord(
-    val text: String,
-    val createdAt: String,
+    val text: String = "",
+    val createdAt: String = "",
     val langs: List<String> = emptyList()
 )
 

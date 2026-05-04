@@ -45,3 +45,6 @@ data class RssItem(
     @XmlElement(false)
     val bookmarkCount: Int? = null
 )
+
+@Serializable
+data class PagedFeedResponse(val items: List<RssItem>, val nextCursor: String? = null)
