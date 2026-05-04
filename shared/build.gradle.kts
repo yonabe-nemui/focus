@@ -74,7 +74,7 @@ kotlin {
                 implementation(libs.sqldelight.sqlite.driver)
             }
         }
-    }
+}
 }
 
 sqldelight {

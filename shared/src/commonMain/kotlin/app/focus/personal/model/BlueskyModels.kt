@@ -44,8 +44,21 @@ data class BlueskyPost(
     val cid: String,
     val author: BlueskyProfile,
     val record: BlueskyRecord,
+    val embed: BlueskyEmbed? = null,
     val likeCount: Int = 0,
     val repostCount: Int = 0
+)
+
+@Serializable
+data class BlueskyEmbed(
+    val images: List<BlueskyEmbedImage> = emptyList()
+)
+
+@Serializable
+data class BlueskyEmbedImage(
+    val thumb: String = "",
+    val fullsize: String = "",
+    val alt: String = ""
 )
 
 @Serializable
@@ -64,11 +77,16 @@ data class BlueskyRecord(
 )
 
 fun BlueskyPost.toRssItem(): RssItem {
+    val images = embed?.images?.takeIf { it.isNotEmpty() }
     return RssItem(
         title = author.displayName ?: author.handle,
         link = "https://bsky.app/profile/${author.did}/post/${uri.split("/").last()}",
         description = record.text,
         pubDate = record.createdAt,
-        guid = uri
+        guid = uri,
+        authorName = author.displayName ?: author.handle,
+        authorAvatarUrl = author.avatar,
+        imageUrls = images?.map { it.thumb },
+        imageFullUrls = images?.map { it.fullsize }
     )
 }

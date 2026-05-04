@@ -5,6 +5,7 @@ import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
+import app.focus.personal.network.MisskeyClient
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -60,13 +61,14 @@ class RssRepositoryTest {
         val googleApi = GoogleRssClient(client)
         val hatenaApi = HatenaRssClient(client)
         val blueskyApi = BlueskyClient(client)
-        val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi)
+        val misskeyApi = MisskeyClient(client)
+        val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi, misskeyApi)
 
         // データの取得を実行
         val items = repository.fetchAllGoogleTopics()
 
-        // 9 categories (1 top stories + 8 topics) * 2 items per response = 18 items
-        assertEquals(18, items.size)
+        // モックは全リクエストで同じ link1/link2 を返すため distinctBy で 2 件に縮退する
+        assertEquals(2, items.size)
         // 最新順（News 2 -> News 1）になっていることを確認
         assertEquals("News 2 (Newer)", items[0].title)
         assertEquals("News 1 (Older)", items[1].title)

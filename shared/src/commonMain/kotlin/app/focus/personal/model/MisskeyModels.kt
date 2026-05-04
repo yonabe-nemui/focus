@@ -9,10 +9,19 @@ data class MisskeyNote(
     val text: String? = null,
     val cw: String? = null,
     val user: MisskeyUser,
+    val files: List<MisskeyFile> = emptyList(),
     val renoteCount: Int = 0,
     val repliesCount: Int = 0,
     val tags: List<String> = emptyList(),
     val visibility: String = "public"
+)
+
+@Serializable
+data class MisskeyFile(
+    val id: String,
+    val type: String = "",
+    val url: String = "",
+    val thumbnailUrl: String? = null
 )
 
 @Serializable
@@ -32,11 +41,24 @@ data class MisskeySettings(
 fun MisskeyNote.toRssItem(instanceUrl: String): RssItem {
     val noteUrl = "https://$instanceUrl/notes/$id"
     val displayText = if (cw != null) "[$cw]\n${text ?: ""}" else (text ?: "")
+    val imageFiles = files.filter { it.type.startsWith("image/") }
+    val imageUrls = imageFiles
+        .map { it.thumbnailUrl ?: it.url }
+        .filter { it.isNotEmpty() }
+        .takeIf { it.isNotEmpty() }
+    val imageFullUrls = imageFiles
+        .map { it.url }
+        .filter { it.isNotEmpty() }
+        .takeIf { it.isNotEmpty() }
     return RssItem(
         title = user.name ?: "@${user.username}",
         link = noteUrl,
         description = displayText,
         pubDate = createdAt,
-        guid = id
+        guid = id,
+        authorName = user.name ?: "@${user.username}",
+        authorAvatarUrl = user.avatarUrl,
+        imageUrls = imageUrls,
+        imageFullUrls = imageFullUrls
     )
 }

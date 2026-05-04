@@ -35,16 +35,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import app.focus.personal.model.MisskeySettings
+import app.focus.personal.model.RssItem
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
 import app.focus.personal.viewmodel.RssViewModel
-import app.focus.personal.model.MisskeySettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RssListScreen(
     viewModel: RssViewModel,
-    onLinkClick: (String) -> Unit,
+    onItemClick: (RssItem) -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -179,7 +180,7 @@ fun RssListScreen(
                                 items(state.items) { item ->
                                     RssItemCard(
                                         item = item,
-                                        onClick = onLinkClick
+                                        onClick = onItemClick
                                     )
                                 }
                                 if (isLoadingMore) {

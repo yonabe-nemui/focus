@@ -43,7 +43,13 @@ data class RssItem(
     @XmlElement(true)
     val guid: String? = null,
     @XmlElement(false)
-    val bookmarkCount: Int? = null
+    val bookmarkCount: Int? = null,
+    @XmlElement(false)
+    val authorName: String? = null,
+    @XmlElement(false)
+    val authorAvatarUrl: String? = null,
+    val imageUrls: List<String>? = null,
+    val imageFullUrls: List<String>? = null
 )
 
 @Serializable
