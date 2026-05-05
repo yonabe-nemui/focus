@@ -58,6 +58,17 @@ class RssViewModel(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
+    // Desktop マルチカラム用: ソースごとの状態
+    private val _columnStates = MutableStateFlow<Map<RssSource, RssUiState>>(
+        mapOf(
+            RssSource.GOOGLE  to RssUiState.Loading,
+            RssSource.HATENA  to RssUiState.Loading,
+            RssSource.BLUESKY to RssUiState.Loading,
+            RssSource.MISSKEY to RssUiState.Loading
+        )
+    )
+    val columnStates: StateFlow<Map<RssSource, RssUiState>> = _columnStates.asStateFlow()
+
     // ページネーション用カーソル・ID
     private var blueskyNextCursor: String? = null
     private var misskeyLastItemId: String? = null
@@ -333,6 +344,76 @@ class RssViewModel(
                 _muteWords.value = _muteWords.value.filter { it != word }
             } catch (e: Exception) {
                 Napier.e("Failed to delete mute word", e)
+            }
+        }
+    }
+
+    // --- Desktop マルチカラム用 ---
+
+    fun loadAllSourcesParallel() {
+        RssSource.values().forEach { source -> loadColumn(source) }
+    }
+
+    fun refreshColumn(source: RssSource) {
+        when (source) {
+            RssSource.BLUESKY -> { blueskyNextCursor = null; blueskyItems = emptyList() }
+            RssSource.MISSKEY -> { misskeyLastItemId = null; misskeyItems = emptyList() }
+            else -> {}
+        }
+        loadColumn(source)
+    }
+
+    fun searchColumnFeed(source: RssSource, query: String) {
+        when (source) {
+            RssSource.BLUESKY -> { _blueskySearchQuery.value = query; blueskyItems = emptyList(); blueskyNextCursor = null }
+            RssSource.MISSKEY -> { _misskeySearchQuery.value = query; misskeyItems = emptyList(); misskeyLastItemId = null }
+            else -> return
+        }
+        loadColumn(source)
+    }
+
+    private fun setColumnState(source: RssSource, state: RssUiState) {
+        _columnStates.value = _columnStates.value + (source to state)
+        if (state is RssUiState.Success) {
+            when (source) {
+                RssSource.GOOGLE  -> googleItems  = state.items
+                RssSource.HATENA  -> hatenaItems  = state.items
+                RssSource.BLUESKY -> blueskyItems = state.items
+                RssSource.MISSKEY -> misskeyItems = state.items
+            }
+            if (_currentSource.value == source) _uiState.value = state
+        }
+    }
+
+    private fun loadColumn(source: RssSource) {
+        scope.launch(dispatcher) {
+            setColumnState(source, RssUiState.Loading)
+            try {
+                val items: List<RssItem> = when (source) {
+                    RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
+                    RssSource.HATENA -> repository.fetchAllHatenaEntries()
+                    RssSource.BLUESKY -> {
+                        if (_blueskySession.value == null) {
+                            setColumnState(source, RssUiState.Success(emptyList()))
+                            return@launch
+                        }
+                        val result = fetchBlueskyPageWithRetry(null)
+                        blueskyNextCursor = result.nextCursor
+                        result.items
+                    }
+                    RssSource.MISSKEY -> {
+                        val settings = _misskeySettings.value ?: run {
+                            setColumnState(source, RssUiState.Success(emptyList()))
+                            return@launch
+                        }
+                        val notes = repository.fetchMisskeyEntries(_misskeySearchQuery.value, settings)
+                        misskeyLastItemId = notes.lastOrNull()?.guid
+                        notes
+                    }
+                }
+                setColumnState(source, RssUiState.Success(items))
+            } catch (e: Exception) {
+                setColumnState(source, RssUiState.Error(e.message ?: "Error"))
             }
         }
     }

@@ -7,8 +7,10 @@ import androidx.compose.ui.window.application
 import app.focus.personal.db.DriverFactory
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.BlueskyClient
-import app.focus.personal.network.FocusApiClient
-import app.focus.personal.repository.ServerRssRepository
+import app.focus.personal.network.GoogleRssClient
+import app.focus.personal.network.HatenaRssClient
+import app.focus.personal.network.MisskeyClient
+import app.focus.personal.repository.RssRepository
 import app.focus.personal.viewmodel.RssViewModel
 import io.github.aakira.napier.DebugAntilog
 import io.github.aakira.napier.Napier
@@ -17,6 +19,8 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import java.awt.Desktop
+import java.net.URI
 
 fun main() = application {
     Napier.base(DebugAntilog())
@@ -33,15 +37,21 @@ fun main() = application {
                     json(Json { ignoreUnknownKeys = true })
                 }
             }
-            val apiClient = FocusApiClient(client, "http://localhost:$SERVER_PORT")
+            val googleApi = GoogleRssClient(client)
+            val hatenaApi = HatenaRssClient(client)
             val blueskyApi = BlueskyClient(client)
-            val repository = ServerRssRepository(database, apiClient, blueskyApi)
+            val misskeyApi = MisskeyClient(client)
+            val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi, misskeyApi)
             RssViewModel(repository, scope)
         }
 
-        App(
+        DesktopApp(
             viewModel = viewModel,
-            onLinkClick = { /* Handle link click if needed */ }
+            onLinkClick = { url ->
+                if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().browse(URI(url))
+                }
+            }
         )
     }
 }

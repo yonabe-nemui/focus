@@ -4,11 +4,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
-import app.focus.personal.db.DriverFactory
-import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
+import app.focus.personal.network.MisskeyClient
 import app.focus.personal.repository.RssRepository
 import app.focus.personal.viewmodel.RssViewModel
 import io.ktor.client.HttpClient
@@ -23,16 +22,7 @@ fun main() {
         val scope = rememberCoroutineScope()
         val viewModel = remember {
             try {
-                // JS環境では worker.js がないと DB 初期化に失敗するため、
-                // 失敗してもクラッシュさせないようにガードする
-                val driver = try {
-                    DriverFactory().createDriver()
-                } catch (e: Exception) {
-                    println("LOG: SQLDelight Driver creation failed, falling back to dummy. ${e.message}")
-                    null
-                }
-                
-                val database = driver?.let { FocusDatabase(it) }
+                // Web では WebWorkerDriver が非同期のため DB は使用しない（セッションはメモリのみ保持）
                 val client = HttpClient {
                     install(ContentNegotiation) {
                         json(Json { ignoreUnknownKeys = true })
@@ -41,8 +31,9 @@ fun main() {
                 val googleApi = GoogleRssClient(client)
                 val hatenaApi = HatenaRssClient(client)
                 val blueskyApi = BlueskyClient(client)
-                
-                val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi)
+                val misskeyApi = MisskeyClient(client)
+
+                val repository = RssRepository(null, googleApi, hatenaApi, blueskyApi, misskeyApi)
                 RssViewModel(repository, scope)
             } catch (e: Exception) {
                 println("CRITICAL ERROR in initialization: ${e.message}")

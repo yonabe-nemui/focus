@@ -18,6 +18,8 @@ import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import platform.Foundation.NSURL
+import platform.UIKit.UIApplication
 
 fun MainViewController() = ComposeUIViewController {
     remember { Napier.base(DebugAntilog()) }
@@ -40,6 +42,14 @@ fun MainViewController() = ComposeUIViewController {
 
     App(
         viewModel = viewModel,
-        onLinkClick = { /* Handled in Swift or shared code if needed */ }
+        onLinkClick = { url ->
+            NSURL(string = url)?.let { nsUrl ->
+                UIApplication.sharedApplication.openURL(
+                    nsUrl,
+                    options = emptyMap<Any?, Any?>(),
+                    completionHandler = null
+                )
+            }
+        }
     )
 }
