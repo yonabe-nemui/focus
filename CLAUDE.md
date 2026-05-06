@@ -73,10 +73,42 @@ iOS: `iosApp/` を Xcode で開く。
 - **スターインポート禁止** — `import package.*` は使わない
 - **文字列のハードコーディング禁止** — 表示文字列は `strings.xml` 等のリソースファイルに定義する
 - **SQLDelight の Boolean** — ネイティブ Boolean ではなく `INTEGER`（Long）で保存（`0L`/`1L`）
-- **開発中の DB マイグレーション** — スキーマ変更時はアプリをアンインストールして DB をリセット
+- **開発中の DB マイグレーション** — スキーマ変更時はアプリをアンインストールして DB をリセット。本番運用時は `.sqm` によるマイグレーションが必要
 - **Ktor ContentNegotiation** — 全プラットフォームで JSON 設定を適用する（シリアライズに必須）
+- **はてな User-Agent** — はてなブックマーク RSS 取得時は、将来的に適切な User-Agent の設定を推奨
 - **マルチモジュール依存** — 依存をモジュール間で公開したい場合は `api` を使う、または各モジュールで `implementation` を重複宣言する
 - **BlueSky 2FA フロー** — 2FA 有効アカウントの初回ログインは HTTP 401 (`AuthFactorTokenRequired`) が返る。トークン入力を促してリトライする
+
+## デザインガイドライン
+
+### デザインシステム
+- Material 3（Material 3 Expressive ガイドラインに準拠）
+- ターゲット: 読書体験に集中できる SNS / ニュースリーダー
+
+### 情報密度
+- Twitter / X 系の高密度レイアウト
+- カードではなく、薄い HorizontalDivider（alpha 低め）でアイテムを区切る
+- エレベーションは使わず、完全フラットなデザイン
+- 不要な余白は最小限に
+
+### タイポグラフィ
+- 本文: 15〜16sp、行間 1.5〜1.6
+- タイトルと本文で明確な階層を作る（サイズ + ウェイトの差）
+- 役割: bodyLarge（本文）、titleMedium（タイトル）、labelSmall（メタ情報）
+
+### カラー & ダークモード
+- ダークモードのベース: #121212〜#1A1A1A（純黒は使わない）
+- OLED モード（#000）はユーザー設定でオプション提供
+- コントラスト比は最低でも WCAG AA を満たす
+
+### コンポーネント設計
+- デザイントークンは `ui/theme/` に集約（Color, Type, Spacing, Shape）
+- 共通コンポーネント: FeedItem, ArticleHeader, SectionDivider など
+- 画面はトークンと共通コンポーネントを組み合わせて構成
+
+### 参考実装
+- Jetpack Compose Samples: Jetnews
+- Tivi（Chris Banes）
 
 ## 技術スタック
 

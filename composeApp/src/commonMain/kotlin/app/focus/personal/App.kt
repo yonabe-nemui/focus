@@ -8,8 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.BindBackHandler
-import app.focus.personal.ui.FocusTheme
 import app.focus.personal.ui.MuteWordSettingsScreen
+import app.focus.personal.ui.theme.FocusTheme
 import app.focus.personal.ui.PostDetailScreen
 import app.focus.personal.ui.RssListScreen
 import app.focus.personal.ui.SettingsScreen

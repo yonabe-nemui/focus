@@ -31,7 +31,7 @@ kotlin {
     // SQLDelight 2.0.x does not support WasmJs yet.
     // @OptIn(ExperimentalWasmDsl::class)
     // wasmJs {
-    //     browser()
+//     browser()
     // }
 
     sourceSets {
@@ -47,6 +47,7 @@ kotlin {
             api(libs.napier)
         }
         androidMain.dependencies {
+
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android.driver)
         }

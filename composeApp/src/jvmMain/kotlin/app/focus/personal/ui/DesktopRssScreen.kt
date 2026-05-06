@@ -1,7 +1,6 @@
 package app.focus.personal.ui
 
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,17 +17,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,12 +46,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.RssItem
+import app.focus.personal.ui.components.FeedItem
+import app.focus.personal.ui.components.SectionDivider
+import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
 import app.focus.personal.viewmodel.RssViewModel
@@ -79,7 +79,7 @@ private val RssSource.icon: ImageVector
 fun DesktopRssScreen(
     viewModel: RssViewModel,
     onItemClick: (RssItem) -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
 ) {
     val columnStates by viewModel.columnStates.collectAsState()
     val blueskySession by viewModel.blueskySession.collectAsState()
@@ -87,35 +87,32 @@ fun DesktopRssScreen(
     val misskeySettings by viewModel.misskeySettings.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadAllSourcesParallel()
-    }
+    LaunchedEffect(Unit) { viewModel.loadAllSourcesParallel() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Focus", style = MaterialTheme.typography.titleLarge) },
+                title = { Text("Focus") },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "設定")
                     }
-                }
+                },
             )
-        }
+        },
     ) { padding ->
         androidx.compose.foundation.layout.BoxWithConstraints(
-            modifier = Modifier.fillMaxSize().padding(padding)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
         ) {
             val minColumnWidth = 280.dp
             val sourceCount = RssSource.values().size
             val fitsAll = maxWidth >= minColumnWidth * sourceCount
             val columnWidth = if (fitsAll) maxWidth / sourceCount else minColumnWidth
 
-            val rowModifier = if (fitsAll) {
-                Modifier.fillMaxSize()
-            } else {
-                Modifier.fillMaxSize().horizontalScroll(rememberScrollState())
-            }
+            val rowModifier = if (fitsAll) Modifier.fillMaxSize()
+            else Modifier.fillMaxSize().horizontalScroll(rememberScrollState())
 
             Row(modifier = rowModifier) {
                 RssSource.values().forEachIndexed { index, source ->
@@ -131,11 +128,11 @@ fun DesktopRssScreen(
                         onLogin = { handle, password, code -> viewModel.loginBluesky(handle, password, code) },
                         onSaveMisskey = { url, token -> viewModel.saveMisskeySettings(url, token) },
                         onSearch = { query -> viewModel.searchColumnFeed(source, query) },
-                        modifier = Modifier.width(columnWidth).fillMaxHeight()
+                        modifier = Modifier
+                            .width(columnWidth)
+                            .fillMaxHeight(),
                     )
-                    if (index < sourceCount - 1) {
-                        VerticalDivider()
-                    }
+                    if (index < sourceCount - 1) VerticalDivider()
                 }
             }
         }
@@ -155,7 +152,7 @@ private fun FeedColumn(
     onLogin: (String, String, String?) -> Unit,
     onSaveMisskey: (String, String?) -> Unit,
     onSearch: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val hasSearch = source == RssSource.BLUESKY || source == RssSource.MISSKEY
     val needsAuth = (source == RssSource.BLUESKY && blueskySession == null) ||
@@ -164,95 +161,85 @@ private fun FeedColumn(
     var localSearchQuery by remember { mutableStateOf("") }
 
     Column(modifier = modifier) {
-        // カラムヘッダー
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            tonalElevation = 2.dp
-        ) {
+        // カラムヘッダー（フラット、elevation なし）
+        Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
             Column {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = FocusSpacing.md, vertical = FocusSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = source.icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(FocusSpacing.sm))
                     Text(
                         text = source.displayName,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                     if (!needsAuth) {
                         IconButton(onClick = onRefresh, enabled = !isLoading) {
                             if (isLoading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp
+                                    strokeWidth = 2.dp,
                                 )
                             } else {
                                 Icon(
                                     Icons.Default.Refresh,
                                     contentDescription = "更新",
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         }
                     }
                 }
-
                 if (hasSearch && !needsAuth) {
                     OutlinedTextField(
                         value = localSearchQuery,
                         onValueChange = { localSearchQuery = it.replace("\n", "") },
-                        placeholder = {
-                            Text("検索...", style = MaterialTheme.typography.bodySmall)
-                        },
+                        placeholder = { Text("検索...", style = MaterialTheme.typography.bodySmall) },
                         leadingIcon = {
                             Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                         },
                         trailingIcon = {
                             if (localSearchQuery.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    localSearchQuery = ""
-                                    onSearch("")
-                                }) {
+                                IconButton(onClick = { localSearchQuery = ""; onSearch("") }) {
                                     Icon(Icons.Default.Clear, contentDescription = "クリア", modifier = Modifier.size(16.dp))
                                 }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
-                            .padding(bottom = 8.dp),
+                            .padding(horizontal = FocusSpacing.sm)
+                            .padding(bottom = FocusSpacing.sm),
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodySmall,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { onSearch(localSearchQuery) })
+                        keyboardActions = KeyboardActions(onSearch = { onSearch(localSearchQuery) }),
                     )
                 }
             }
         }
 
-        HorizontalDivider()
+        SectionDivider()
 
         when {
             source == RssSource.BLUESKY && blueskySession == null ->
                 BlueskyLoginScreen(
                     is2faRequired = is2faRequired,
                     uiState = loginUiState,
-                    onLogin = onLogin
+                    onLogin = onLogin,
                 )
             source == RssSource.MISSKEY && misskeySettings == null ->
                 MisskeySettingsScreen(
                     uiState = loginUiState,
-                    onSave = onSaveMisskey
+                    onSave = onSaveMisskey,
                 )
             else -> ColumnFeedList(uiState = uiState, onItemClick = onItemClick)
         }
@@ -262,31 +249,32 @@ private fun FeedColumn(
 @Composable
 private fun ColumnFeedList(
     uiState: RssUiState,
-    onItemClick: (RssItem) -> Unit
+    onItemClick: (RssItem) -> Unit,
 ) {
     when (uiState) {
         is RssUiState.Loading -> Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator()
         }
         is RssUiState.Success -> LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+            modifier = Modifier.fillMaxSize(),
         ) {
             items(uiState.items) { item ->
-                RssItemCard(item = item, onClick = onItemClick)
+                FeedItem(item = item, onClick = onItemClick)
             }
         }
         is RssUiState.Error -> Box(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            contentAlignment = Alignment.Center
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(FocusSpacing.lg),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = uiState.message,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
             )
         }
     }

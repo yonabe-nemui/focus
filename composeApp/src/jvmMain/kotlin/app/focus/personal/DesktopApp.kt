@@ -11,7 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.focus.personal.ui.DesktopRssScreen
-import app.focus.personal.ui.FocusTheme
+import app.focus.personal.ui.theme.FocusTheme
 import app.focus.personal.ui.MuteWordSettingsScreen
 import app.focus.personal.ui.PostDetailScreen
 import app.focus.personal.ui.SettingsScreen
