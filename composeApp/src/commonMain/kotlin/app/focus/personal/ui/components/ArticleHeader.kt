@@ -56,7 +56,7 @@ fun ArticleHeader(
 }
 
 @Composable
-private fun AuthorAvatar(name: String, avatarUrl: String?, size: Dp) {
+internal fun AuthorAvatar(name: String, avatarUrl: String?, size: Dp) {
     val imageLoader = LocalAppImageLoader.current
     if (avatarUrl != null && imageLoader != null) {
         AsyncImage(

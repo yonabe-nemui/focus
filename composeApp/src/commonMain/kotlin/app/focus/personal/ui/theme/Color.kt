@@ -17,8 +17,8 @@ private val Paper200 = Color(0xFFE5E5DE)
 private val Paper700 = Color(0xFF3E3E39)
 private val Paper900 = Color(0xFF14140F)
 
-// ── Ink (dark surface tones) ──────────────────────────────────────────────────
-private val Ink900 = Color(0xFF11120F)
+// ── Ink (dark surface tones, warm near-black) ─────────────────────────────────
+private val Ink900 = Color(0xFF11120F)  // #121212 相当（純黒は使わない）
 private val Ink800 = Color(0xFF1C1D1A)
 private val Ink700 = Color(0xFF2A2A25)
 private val Ink500 = Color(0xFF6B6B64)
@@ -27,8 +27,7 @@ private val Ink500 = Color(0xFF6B6B64)
 private val ErrorRed          = Color(0xFFB3261E)
 private val ErrorRedContainer = Color(0xFFFDECEB)
 
-// ── Color schemes ─────────────────────────────────────────────────────────────
-
+// ── Light scheme ──────────────────────────────────────────────────────────────
 internal val FocusLightColorScheme = lightColorScheme(
     primary              = AccentGreen,
     onPrimary            = Color.White,
@@ -55,6 +54,8 @@ internal val FocusLightColorScheme = lightColorScheme(
     onErrorContainer     = Color(0xFF410E0B),
 )
 
+// ── Dark scheme ───────────────────────────────────────────────────────────────
+// ベースは純黒ではなく Ink900 (#121212 相当) でフラットな階層を保つ
 internal val FocusDarkColorScheme = darkColorScheme(
     primary              = AccentGreenLight,
     onPrimary            = Color(0xFF0F1A14),
@@ -68,7 +69,6 @@ internal val FocusDarkColorScheme = darkColorScheme(
     onTertiary           = Ink900,
     tertiaryContainer    = Ink700,
     onTertiaryContainer  = Color(0xFFCFCFC6),
-    // ダークモードベースは純黒ではなく #1C1D1A 系のニュートラルグレー
     background           = Ink900,
     onBackground         = Color(0xFFF3F3EE),
     surface              = Ink800,
@@ -80,4 +80,12 @@ internal val FocusDarkColorScheme = darkColorScheme(
     onError              = Color(0xFF690005),
     errorContainer       = Color(0xFF93000A),
     onErrorContainer     = Color(0xFFFFDAD6),
+)
+
+// ── OLED Black scheme ─────────────────────────────────────────────────────────
+// Dark scheme の派生。background/surface を純黒にして AMOLED 省電力を最大化。
+// ユーザー設定で切り替え可能にする想定（デフォルト OFF）。
+internal val FocusOledColorScheme = FocusDarkColorScheme.copy(
+    background = Color(0xFF000000),
+    surface    = Color(0xFF0A0A0A),
 )

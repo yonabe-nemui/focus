@@ -5,15 +5,18 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -29,8 +32,8 @@ import coil3.compose.AsyncImage
  * フィードの1アイテム。Card・elevation を使わずフラットなレイアウト。
  * 下端に SectionDivider を内包し、LazyColumn 側での追加処理が不要。
  *
- * - SNS 投稿（authorName あり）: ArticleHeader + 本文 + 画像
- * - ニュース/RSS（authorName なし）: タイトル + ブックマーク数 + 説明 + 日付
+ * - SNS 投稿（authorName あり）: 左アバター + 右コンテンツ（Twitter 形式）
+ * - ニュース/RSS（authorName なし）: タイトル + 説明 + 画像 + メタ情報
  */
 @Composable
 fun FeedItem(
@@ -38,95 +41,170 @@ fun FeedItem(
     onClick: (RssItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val imageLoader = LocalAppImageLoader.current
-    val authorName = item.authorName
-    val imageUrls  = item.imageUrls
-
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick(item) },
     ) {
-        Column(
-            modifier = Modifier.padding(
-                horizontal = FocusSpacing.lg,
-                vertical = FocusSpacing.sm,
-            ),
-        ) {
-            if (authorName != null) {
-                // ── SNS 投稿レイアウト ────────────────────────────────────
-                ArticleHeader(
-                    authorName = authorName,
-                    authorAvatarUrl = item.authorAvatarUrl,
-                    pubDate = item.pubDate,
-                    modifier = Modifier.padding(bottom = FocusSpacing.xs),
+        if (item.authorName != null) {
+            SnsPostItem(item = item)
+        } else {
+            NewsItem(item = item)
+        }
+        SectionDivider()
+    }
+}
+
+/** SNS 投稿: 左アバター + 右コンテンツ（Twitter/Bluesky 形式） */
+@Composable
+private fun SnsPostItem(item: RssItem) {
+    val imageUrls = item.imageUrls
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = FocusSpacing.lg, vertical = FocusSpacing.md),
+        verticalAlignment = Alignment.Top,
+    ) {
+        AuthorAvatar(
+            name = item.authorName ?: "",
+            avatarUrl = item.authorAvatarUrl,
+            size = 40.dp,
+        )
+        Spacer(Modifier.width(FocusSpacing.sm))
+        Column(modifier = Modifier.weight(1f)) {
+            // 著者名 + 時刻（同一行）
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = item.authorName ?: "",
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                item.description?.let { text ->
+                item.pubDate?.let { date ->
                     Text(
-                        text = text,
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = " · $date",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
                     )
                 }
-            } else {
-                // ── ニュース / RSS レイアウト ─────────────────────────────
+            }
+            // 本文（最大 4 行、ellipsis）
+            item.description?.let { text ->
+                Spacer(Modifier.height(FocusSpacing.xxs))
                 Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                 )
-                item.bookmarkCount?.let { count ->
-                    Text(
-                        text = "$count users",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = FocusSpacing.xxs),
-                    )
-                }
-                item.description?.let { desc ->
-                    Text(
-                        text = desc,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = FocusSpacing.xs),
-                    )
-                }
+            }
+            // 画像（本文の下）
+            if (!imageUrls.isNullOrEmpty()) {
+                Spacer(Modifier.height(FocusSpacing.sm))
+                FeedImageGallery(imageUrls = imageUrls)
+            }
+        }
+    }
+}
+
+/** ニュース / RSS: タイトル + 説明 + 画像 + メタ情報行 */
+@Composable
+private fun NewsItem(item: RssItem) {
+    val imageUrls = item.imageUrls
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = FocusSpacing.lg, vertical = FocusSpacing.md),
+    ) {
+        Text(
+            text = item.title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        item.description?.let { desc ->
+            Spacer(Modifier.height(FocusSpacing.xxs))
+            Text(
+                text = desc,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        // 画像（本文の下、角丸 12dp）
+        if (!imageUrls.isNullOrEmpty()) {
+            Spacer(Modifier.height(FocusSpacing.sm))
+            FeedImageGallery(imageUrls = imageUrls)
+        }
+        // メタ情報行（日時・ブックマーク数）
+        if (item.pubDate != null || item.bookmarkCount != null) {
+            Spacer(Modifier.height(FocusSpacing.xs))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(FocusSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 item.pubDate?.let { date ->
                     Text(
                         text = date,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = FocusSpacing.xs),
+                    )
+                }
+                item.bookmarkCount?.let { count ->
+                    Text(
+                        text = "$count users",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
+        }
+    }
+}
 
-            // ── 画像ギャラリー（SNS・ニュース共通）──────────────────────
-            if (!imageUrls.isNullOrEmpty() && imageLoader != null) {
-                Row(
+/** 1 枚: フル幅 180dp / 複数: 横スクロールギャラリー。角丸は imageCornerDetail (12dp)。 */
+@Composable
+private fun FeedImageGallery(
+    imageUrls: List<String>,
+    modifier: Modifier = Modifier,
+) {
+    val imageLoader = LocalAppImageLoader.current ?: return
+    if (imageUrls.size == 1) {
+        AsyncImage(
+            model = imageUrls[0],
+            contentDescription = null,
+            imageLoader = imageLoader,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .clip(RoundedCornerShape(FocusShape.imageCornerDetail)),
+        )
+    } else {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(FocusSpacing.xs),
+        ) {
+            imageUrls.forEach { url ->
+                AsyncImage(
+                    model = url,
+                    contentDescription = null,
+                    imageLoader = imageLoader,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = FocusSpacing.sm)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(FocusSpacing.xs),
-                ) {
-                    imageUrls.forEach { url ->
-                        AsyncImage(
-                            model = url,
-                            contentDescription = null,
-                            imageLoader = imageLoader,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .height(160.dp)
-                                .widthIn(min = 120.dp, max = 280.dp)
-                                .clip(RoundedCornerShape(FocusShape.imageCorner)),
-                        )
-                    }
-                }
+                        .height(160.dp)
+                        .widthIn(min = 120.dp, max = 240.dp)
+                        .clip(RoundedCornerShape(FocusShape.imageCornerDetail)),
+                )
             }
         }
-
-        SectionDivider()
     }
 }

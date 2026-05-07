@@ -46,7 +46,7 @@ fun MisskeySettingsScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = FocusSpacing.xl)
-            .padding(top = FocusSpacing.xxl, bottom = FocusSpacing.lg),
+            .padding(top = FocusSpacing.xxxl, bottom = FocusSpacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
