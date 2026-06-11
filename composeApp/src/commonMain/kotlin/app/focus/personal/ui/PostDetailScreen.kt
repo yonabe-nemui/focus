@@ -30,6 +30,10 @@ import app.focus.personal.ui.components.ArticleHeader
 import app.focus.personal.ui.theme.FocusShape
 import app.focus.personal.ui.theme.FocusSpacing
 import coil3.compose.AsyncImage
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.cd_back
+import focus.composeapp.generated.resources.cd_open_in_browser
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,12 +53,12 @@ fun PostDetailScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "戻る")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onOpenInBrowser) {
-                        Icon(Icons.Default.OpenInBrowser, contentDescription = "ブラウザで開く")
+                        Icon(Icons.Default.OpenInBrowser, contentDescription = stringResource(Res.string.cd_open_in_browser))
                     }
                 },
             )

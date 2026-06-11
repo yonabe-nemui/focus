@@ -30,6 +30,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssUiState
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.misskey_api_token_label
+import focus.composeapp.generated.resources.misskey_connect_button
+import focus.composeapp.generated.resources.misskey_instance_url_label
+import focus.composeapp.generated.resources.misskey_settings_description
+import focus.composeapp.generated.resources.misskey_settings_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MisskeySettingsScreen(
@@ -51,12 +58,12 @@ fun MisskeySettingsScreen(
         verticalArrangement = Arrangement.Top,
     ) {
         Text(
-            text = "Misskey 設定",
+            text = stringResource(Res.string.misskey_settings_title),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(bottom = FocusSpacing.sm),
         )
         Text(
-            text = "インスタンスURLを入力してください。APIトークンは任意です（入力するとローカルタイムラインを取得します）。",
+            text = stringResource(Res.string.misskey_settings_description),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .fillMaxWidth()
@@ -77,7 +84,7 @@ fun MisskeySettingsScreen(
         TextField(
             value = instanceUrl,
             onValueChange = { instanceUrl = it.replace("\n", "") },
-            label = { Text("インスタンスURL (例: misskey.io)") },
+            label = { Text(stringResource(Res.string.misskey_instance_url_label)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = FocusSpacing.sm),
@@ -88,7 +95,7 @@ fun MisskeySettingsScreen(
         TextField(
             value = apiToken,
             onValueChange = { apiToken = it.replace("\n", "") },
-            label = { Text("APIトークン（任意）") },
+            label = { Text(stringResource(Res.string.misskey_api_token_label)) },
             visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 IconButton(onClick = { tokenVisible = !tokenVisible }, enabled = !isLoading) {
@@ -117,7 +124,7 @@ fun MisskeySettingsScreen(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("接続")
+                Text(stringResource(Res.string.misskey_connect_button))
             }
         }
     }

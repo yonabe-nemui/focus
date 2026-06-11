@@ -6,6 +6,7 @@ import app.focus.personal.db.RssChannelEntity
 import app.focus.personal.db.RssItemEntity
 import app.focus.personal.model.BlueskyPost
 import app.focus.personal.model.BlueskySession
+import app.focus.personal.model.HatenaItem
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.MutedWord
 import app.focus.personal.model.PagedFeedResponse
@@ -17,11 +18,14 @@ import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.MisskeyClient
 import app.focus.personal.util.DateUtils
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class RssRepository(
     private val database: FocusDatabase?,
@@ -33,63 +37,83 @@ class RssRepository(
     private val queries = database?.focusDatabaseQueries
 
     private val googleTopics = listOf(
-        "WORLD", "NATION", "BUSINESS", "TECHNOLOGY", 
+        "WORLD", "NATION", "BUSINESS", "TECHNOLOGY",
         "ENTERTAINMENT", "SPORTS", "SCIENCE", "HEALTH"
     )
 
-    override suspend fun fetchAllGoogleTopics(): List<RssItem> = coroutineScope {
-        val deferredTop = async {
-            try { googleApi.fetchTopStories().channel.items } catch (e: Exception) { emptyList() }
+    // BlueSky ミュートワードのキャッシュ（セッション DID をキー、5 分 TTL）
+    private var mutedWordsCache: Pair<String, List<MutedWord>>? = null
+    private var mutedWordsCacheAt: Long = 0L
+    private val mutedWordsCacheTtlMs = 5 * 60 * 1000L
+
+    @OptIn(ExperimentalTime::class)
+    private suspend fun getCachedMutedWords(session: BlueskySession): List<MutedWord> {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val cached = mutedWordsCache
+        if (cached != null && cached.first == session.did && now - mutedWordsCacheAt < mutedWordsCacheTtlMs) {
+            return cached.second
         }
+        return try {
+            val fresh = blueskyApi.getMutedWords(session)
+            mutedWordsCache = session.did to fresh
+            mutedWordsCacheAt = now
+            fresh
+        } catch (e: Exception) {
+            Napier.w("BlueSky getMutedWords failed: ${e.message}")
+            cached?.second ?: emptyList()
+        }
+    }
+
+    // ASCII のみのワードは単語境界マッチで誤検出を防ぐ ("book" が "facebook" にマッチしない)
+    // CJK 等を含む場合は単語境界の概念がないため部分一致を許容する
+    private val asciiOnly = Regex("^[\\x00-\\x7F]+$")
+
+    private fun matchesMutedWord(text: String, word: String): Boolean {
+        if (word.isEmpty()) return false
+        return if (asciiOnly.matches(word)) {
+            Regex("\\b${Regex.escape(word)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)
+        } else {
+            text.contains(word, ignoreCase = true)
+        }
+    }
+
+    private suspend fun fetchGoogleTopicSafe(label: String, block: suspend () -> List<RssItem>): List<RssItem> = try {
+        block()
+    } catch (e: Exception) {
+        Napier.w("Google $label fetch failed: ${e.message}")
+        emptyList()
+    }
+
+    private suspend fun fetchHatenaSafe(label: String, block: suspend () -> List<HatenaItem>): List<HatenaItem> = try {
+        block()
+    } catch (e: Exception) {
+        Napier.w("Hatena $label fetch failed: ${e.message}")
+        emptyList()
+    }
+
+    override suspend fun fetchAllGoogleTopics(): List<RssItem> = coroutineScope {
+        val deferredTop = async { fetchGoogleTopicSafe("top") { googleApi.fetchTopStories().channel.items } }
         val deferredOthers = googleTopics.map { topic ->
-            async {
-                try { googleApi.fetchTopicRss(topic).channel.items } catch (e: Exception) { emptyList() }
-            }
+            async { fetchGoogleTopicSafe(topic) { googleApi.fetchTopicRss(topic).channel.items } }
         }
 
         (listOf(deferredTop) + deferredOthers).awaitAll()
             .flatten()
+            .map { it.copy(pubDateMillis = DateUtils.parseRfc822ToMillis(it.pubDate)) }
             .distinctBy { it.guid ?: it.link }
-            .sortedByDescending { DateUtils.parseRfc822ToMillis(it.pubDate) }
+            .sortedByDescending { it.pubDateMillis }
     }
 
     override suspend fun fetchAllHatenaEntries(): List<RssItem> = coroutineScope {
-        val deferredHot = async { try { hatenaApi.fetchHotEntry().items } catch (e: Exception) { emptyList() } }
-        val deferredNew = async { try { hatenaApi.fetchEntryList().items } catch (e: Exception) { emptyList() } }
-        val deferredIt = async { try { hatenaApi.fetchItHotEntry().items } catch (e: Exception) { emptyList() } }
+        val deferredHot = async { fetchHatenaSafe("hot") { hatenaApi.fetchHotEntry().items } }
+        val deferredNew = async { fetchHatenaSafe("new") { hatenaApi.fetchEntryList().items } }
+        val deferredIt = async { fetchHatenaSafe("it") { hatenaApi.fetchItHotEntry().items } }
 
         awaitAll(deferredHot, deferredNew, deferredIt)
             .flatten()
             .distinctBy { it.link }
             .map { it.toRssItem() }
-            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
-    }
-
-    suspend fun fetchHatenaHotEntries(): List<RssItem> {
-        return try {
-            hatenaApi.fetchHotEntry().items.map { it.toRssItem() }
-                .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    suspend fun fetchHatenaNewEntries(): List<RssItem> {
-        return try {
-            hatenaApi.fetchEntryList().items.map { it.toRssItem() }
-                .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    suspend fun fetchHatenaItEntries(): List<RssItem> {
-        return try {
-            hatenaApi.fetchItHotEntry().items.map { it.toRssItem() }
-                .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
-        } catch (e: Exception) {
-            emptyList()
-        }
+            .sortedByDescending { it.pubDateMillis }
     }
 
     override suspend fun loginBluesky(
@@ -128,6 +152,8 @@ class RssRepository(
 
     override fun clearBlueskySession() {
         queries?.clearActiveBlueskySession()
+        mutedWordsCache = null
+        mutedWordsCacheAt = 0L
     }
 
     override suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession {
@@ -140,9 +166,7 @@ class RssRepository(
         fetchBlueskyPage(query, session, null).items
 
     override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse {
-        val mutedWords = if (session != null) {
-            try { blueskyApi.getMutedWords(session) } catch (e: Exception) { emptyList() }
-        } else emptyList<MutedWord>()
+        val mutedWords = if (session != null) getCachedMutedWords(session) else emptyList()
 
         var posts: List<BlueskyPost> = emptyList()
         var nextCursor: String? = null
@@ -161,11 +185,11 @@ class RssRepository(
 
         val items = posts
             .filter { post ->
-                val text = post.record.text.lowercase()
-                mutedWords.none { word -> word.value.lowercase().isNotEmpty() && text.contains(word.value.lowercase()) }
+                val text = post.record.text
+                mutedWords.none { matchesMutedWord(text, it.value) }
             }
             .map { it.toRssItem() }
-            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+            .sortedByDescending { it.pubDateMillis }
 
         return PagedFeedResponse(items, nextCursor)
     }
@@ -177,16 +201,23 @@ class RssRepository(
         val token = settings.apiToken
         val notes = when {
             token != null && query.isEmpty() ->
-                try { misskeyApi.getHomeTimeline(settings.instanceUrl, token, untilId = untilId) } catch (e: Exception) { emptyList() }
+                fetchMisskeySafe("home") { misskeyApi.getHomeTimeline(settings.instanceUrl, token, untilId = untilId) }
             token != null && query.isNotEmpty() ->
-                try { misskeyApi.searchNotes(settings.instanceUrl, query, token = token, untilId = untilId) } catch (e: Exception) { emptyList() }
+                fetchMisskeySafe("search-auth") { misskeyApi.searchNotes(settings.instanceUrl, query, token = token, untilId = untilId) }
             query.isNotEmpty() ->
-                try { misskeyApi.searchNotes(settings.instanceUrl, query, untilId = untilId) } catch (e: Exception) { emptyList() }
+                fetchMisskeySafe("search") { misskeyApi.searchNotes(settings.instanceUrl, query, untilId = untilId) }
             else -> emptyList()
         }
         return notes
             .map { it.toRssItem(settings.instanceUrl) }
-            .sortedByDescending { DateUtils.parseIso8601ToMillis(it.pubDate) }
+            .sortedByDescending { it.pubDateMillis }
+    }
+
+    private suspend fun <T> fetchMisskeySafe(label: String, block: suspend () -> List<T>): List<T> = try {
+        block()
+    } catch (e: Exception) {
+        Napier.w("Misskey $label fetch failed: ${e.message}")
+        emptyList()
     }
 
     override fun getSavedMisskeySettings(): MisskeySettings? {

@@ -8,6 +8,7 @@ import app.focus.personal.repository.FeedRepository
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +37,6 @@ class RssViewModel(
     private val _currentSource = MutableStateFlow(RssSource.GOOGLE)
     val currentSource: StateFlow<RssSource> = _currentSource.asStateFlow()
 
-    // Bluesky Session
     private val _blueskySession = MutableStateFlow<BlueskySession?>(null)
     val blueskySession: StateFlow<BlueskySession?> = _blueskySession.asStateFlow()
 
@@ -45,9 +45,6 @@ class RssViewModel(
 
     private val _misskeySettings = MutableStateFlow<MisskeySettings?>(null)
     val misskeySettings: StateFlow<MisskeySettings?> = _misskeySettings.asStateFlow()
-
-    private val _blueskySearchQuery = MutableStateFlow("")
-    private val _misskeySearchQuery = MutableStateFlow("")
 
     private val _muteWords = MutableStateFlow<List<String>>(emptyList())
     val muteWords: StateFlow<List<String>> = _muteWords.asStateFlow()
@@ -58,26 +55,22 @@ class RssViewModel(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
-    // Desktop マルチカラム用: ソースごとの状態
-    private val _columnStates = MutableStateFlow<Map<RssSource, RssUiState>>(
-        mapOf(
-            RssSource.GOOGLE  to RssUiState.Loading,
-            RssSource.HATENA  to RssUiState.Loading,
-            RssSource.BLUESKY to RssUiState.Loading,
-            RssSource.MISSKEY to RssUiState.Loading
-        )
+    // Desktop マルチカラム用: ソースごとの UI 状態
+    private val _columnStates = MutableStateFlow(
+        RssSource.entries.associateWith<RssSource, RssUiState> { RssUiState.Loading }
     )
     val columnStates: StateFlow<Map<RssSource, RssUiState>> = _columnStates.asStateFlow()
 
-    // ページネーション用カーソル・ID
-    private var blueskyNextCursor: String? = null
-    private var misskeyLastItemId: String? = null
+    // ソース別の内部状態（items, ページネーション cursor/untilId, 検索クエリ）
+    private val cachedItems: MutableMap<RssSource, List<RssItem>> =
+        RssSource.entries.associateWith<RssSource, List<RssItem>> { emptyList() }.toMutableMap()
+    private val paginationCursor: MutableMap<RssSource, String?> =
+        RssSource.entries.associateWith<RssSource, String?> { null }.toMutableMap()
+    private val searchQueries: MutableMap<RssSource, String> =
+        RssSource.entries.associateWith { "" }.toMutableMap()
 
-    // メモリ上のキャッシュリスト
-    private var googleItems = listOf<RssItem>()
-    private var hatenaItems = listOf<RssItem>()
-    private var blueskyItems = listOf<RssItem>()
-    private var misskeyItems = listOf<RssItem>()
+    // モバイル単一カラムの進行中 fetch Job。タブ高速切り替え時の race を防ぐ。
+    private var currentLoadJob: Job? = null
 
     init {
         checkSavedSession()
@@ -86,41 +79,34 @@ class RssViewModel(
     }
 
     private fun checkSavedSession() {
-        val savedSession = repository.getSavedBlueskySession()
-        if (savedSession != null) {
-            _blueskySession.value = savedSession
-        }
+        repository.getSavedBlueskySession()?.let { _blueskySession.value = it }
     }
 
     private fun checkSavedMisskeySettings() {
-        val saved = repository.getSavedMisskeySettings()
-        if (saved != null) {
-            _misskeySettings.value = saved
-        }
+        repository.getSavedMisskeySettings()?.let { _misskeySettings.value = it }
+    }
+
+    private fun resetSourceCache(source: RssSource) {
+        cachedItems[source] = emptyList()
+        paginationCursor[source] = null
     }
 
     fun setSource(source: RssSource) {
         if (_currentSource.value == source) return
         _currentSource.value = source
 
-        val cachedItems = when (source) {
-            RssSource.GOOGLE -> googleItems
-            RssSource.HATENA -> hatenaItems
-            RssSource.BLUESKY -> blueskyItems
-            RssSource.MISSKEY -> misskeyItems
-        }
-
+        val cached = cachedItems[source].orEmpty()
         val needsFetch = when (source) {
-            RssSource.BLUESKY -> _blueskySession.value != null && cachedItems.isEmpty()
-            RssSource.MISSKEY -> _misskeySettings.value != null && cachedItems.isEmpty()
-            else -> cachedItems.isEmpty()
+            RssSource.BLUESKY -> _blueskySession.value != null && cached.isEmpty()
+            RssSource.MISSKEY -> _misskeySettings.value != null && cached.isEmpty()
+            else -> cached.isEmpty()
         }
 
         if (needsFetch) {
             _uiState.value = RssUiState.Loading
             loadAllTopics()
         } else {
-            _uiState.value = RssUiState.Success(cachedItems)
+            _uiState.value = RssUiState.Success(cached)
         }
     }
 
@@ -160,7 +146,7 @@ class RssViewModel(
         )
         repository.saveMisskeySettings(settings)
         _misskeySettings.value = settings
-        misskeyItems = emptyList()
+        resetSourceCache(RssSource.MISSKEY)
         if (_currentSource.value == RssSource.MISSKEY) {
             loadAllTopics()
         }
@@ -168,7 +154,7 @@ class RssViewModel(
 
     fun clearMisskeySettings() {
         _misskeySettings.value = null
-        misskeyItems = emptyList()
+        resetSourceCache(RssSource.MISSKEY)
         repository.clearMisskeySettings()
         if (_currentSource.value == RssSource.MISSKEY) {
             _uiState.value = RssUiState.Success(emptyList())
@@ -177,7 +163,7 @@ class RssViewModel(
 
     fun logoutBluesky() {
         _blueskySession.value = null
-        blueskyItems = emptyList()
+        resetSourceCache(RssSource.BLUESKY)
         repository.clearBlueskySession()
         if (_currentSource.value == RssSource.BLUESKY) {
             _uiState.value = RssUiState.Success(emptyList())
@@ -185,28 +171,32 @@ class RssViewModel(
     }
 
     fun loadAllTopics() {
-        scope.launch(dispatcher) {
+        currentLoadJob?.cancel()
+        currentLoadJob = scope.launch(dispatcher) {
             _uiState.value = RssUiState.Loading
             try {
                 val source = _currentSource.value
-                val newItems = when (source) {
-                    RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
-                    RssSource.HATENA -> repository.fetchAllHatenaEntries()
-                    RssSource.BLUESKY -> {
-                        val result = fetchBlueskyPageWithRetry(null)
-                        blueskyNextCursor = result.nextCursor
-                        result.items
-                    }
-                    RssSource.MISSKEY -> {
-                        val items = fetchMisskeyEntries()
-                        misskeyLastItemId = items.lastOrNull()?.guid
-                        items
-                    }
-                }
+                val newItems = fetchInitial(source)
                 updateList(newItems, source)
             } catch (e: Exception) {
+                Napier.w("loadAllTopics failed: ${e.message}")
                 _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
             }
+        }
+    }
+
+    private suspend fun fetchInitial(source: RssSource): List<RssItem> = when (source) {
+        RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
+        RssSource.HATENA -> repository.fetchAllHatenaEntries()
+        RssSource.BLUESKY -> {
+            val result = fetchBlueskyPageWithRetry(null)
+            paginationCursor[RssSource.BLUESKY] = result.nextCursor
+            result.items
+        }
+        RssSource.MISSKEY -> {
+            val items = fetchMisskeyEntries()
+            paginationCursor[RssSource.MISSKEY] = items.lastOrNull()?.guid
+            items
         }
     }
 
@@ -218,37 +208,33 @@ class RssViewModel(
         scope.launch(dispatcher) {
             _isLoadingMore.value = true
             try {
+                val newItems: List<RssItem>
+                val nextCursor: String?
                 when (source) {
                     RssSource.BLUESKY -> {
-                        val cursor = blueskyNextCursor ?: return@launch
+                        val cursor = paginationCursor[source] ?: return@launch
                         val result = fetchBlueskyPageWithRetry(cursor)
-                        if (result.items.isNotEmpty()) {
-                            val combined = (blueskyItems + result.items).distinctBy { it.link }
-                            blueskyItems = combined
-                            blueskyNextCursor = result.nextCursor
-                            if (_currentSource.value == RssSource.BLUESKY) {
-                                _uiState.value = RssUiState.Success(combined)
-                            }
-                        } else {
-                            blueskyNextCursor = null
-                        }
+                        newItems = result.items
+                        nextCursor = result.nextCursor
                     }
                     RssSource.MISSKEY -> {
-                        val untilId = misskeyLastItemId ?: return@launch
+                        val untilId = paginationCursor[source] ?: return@launch
                         val settings = _misskeySettings.value ?: return@launch
-                        val newItems = repository.fetchMisskeyPage(_misskeySearchQuery.value, settings, untilId)
-                        if (newItems.isNotEmpty()) {
-                            val combined = (misskeyItems + newItems).distinctBy { it.link }
-                            misskeyItems = combined
-                            misskeyLastItemId = combined.lastOrNull()?.guid
-                            if (_currentSource.value == RssSource.MISSKEY) {
-                                _uiState.value = RssUiState.Success(combined)
-                            }
-                        } else {
-                            misskeyLastItemId = null
-                        }
+                        newItems = repository.fetchMisskeyPage(searchQueries[source].orEmpty(), settings, untilId)
+                        nextCursor = newItems.lastOrNull()?.guid
                     }
-                    else -> {}
+                    RssSource.GOOGLE, RssSource.HATENA -> return@launch
+                }
+
+                if (newItems.isNotEmpty()) {
+                    val combined = (cachedItems[source].orEmpty() + newItems).distinctBy { it.link }
+                    cachedItems[source] = combined
+                    paginationCursor[source] = nextCursor
+                    if (_currentSource.value == source) {
+                        _uiState.value = RssUiState.Success(combined)
+                    }
+                } else {
+                    paginationCursor[source] = null
                 }
             } catch (e: Exception) {
                 Napier.e("loadMore failed", e)
@@ -261,8 +247,9 @@ class RssViewModel(
     private suspend fun fetchMisskeyEntries(): List<RssItem> {
         val settings = _misskeySettings.value ?: return emptyList()
         return try {
-            repository.fetchMisskeyEntries(query = _misskeySearchQuery.value, settings = settings)
+            repository.fetchMisskeyEntries(query = searchQueries[RssSource.MISSKEY].orEmpty(), settings = settings)
         } catch (e: Exception) {
+            Napier.w("Misskey fetch failed: ${e.message}")
             emptyList()
         }
     }
@@ -272,7 +259,7 @@ class RssViewModel(
             Napier.w("BlueSky: no session, skipping fetch")
             return PagedFeedResponse(emptyList())
         }
-        val query = _blueskySearchQuery.value
+        val query = searchQueries[RssSource.BLUESKY].orEmpty()
         Napier.d("BlueSky: fetching page query='$query' cursor=$cursor")
         return try {
             val result = repository.fetchBlueskyPage(query = query, session = session, cursor = cursor)
@@ -295,19 +282,10 @@ class RssViewModel(
     }
 
     fun searchFeed(query: String) {
-        when (_currentSource.value) {
-            RssSource.BLUESKY -> {
-                _blueskySearchQuery.value = query
-                blueskyItems = emptyList()
-                blueskyNextCursor = null
-            }
-            RssSource.MISSKEY -> {
-                _misskeySearchQuery.value = query
-                misskeyItems = emptyList()
-                misskeyLastItemId = null
-            }
-            else -> return
-        }
+        val source = _currentSource.value
+        if (source != RssSource.BLUESKY && source != RssSource.MISSKEY) return
+        searchQueries[source] = query
+        resetSourceCache(source)
         loadAllTopics()
     }
 
@@ -348,40 +326,30 @@ class RssViewModel(
         }
     }
 
-    // --- Desktop マルチカラム用 ---
+    // --- Desktop マルチカラム ---
 
     fun loadAllSourcesParallel() {
-        RssSource.values().forEach { source -> loadColumn(source) }
+        RssSource.entries.forEach { source -> loadColumn(source) }
     }
 
     fun refreshColumn(source: RssSource) {
-        when (source) {
-            RssSource.BLUESKY -> { blueskyNextCursor = null; blueskyItems = emptyList() }
-            RssSource.MISSKEY -> { misskeyLastItemId = null; misskeyItems = emptyList() }
-            else -> {}
-        }
+        resetSourceCache(source)
         loadColumn(source)
     }
 
     fun searchColumnFeed(source: RssSource, query: String) {
-        when (source) {
-            RssSource.BLUESKY -> { _blueskySearchQuery.value = query; blueskyItems = emptyList(); blueskyNextCursor = null }
-            RssSource.MISSKEY -> { _misskeySearchQuery.value = query; misskeyItems = emptyList(); misskeyLastItemId = null }
-            else -> return
-        }
+        if (source != RssSource.BLUESKY && source != RssSource.MISSKEY) return
+        searchQueries[source] = query
+        resetSourceCache(source)
         loadColumn(source)
     }
 
+    // デスクトップマルチカラムの状態更新。モバイル側 _uiState には影響させない。
+    // cachedItems は両モードで共有（再フェッチを避ける）。
     private fun setColumnState(source: RssSource, state: RssUiState) {
         _columnStates.value = _columnStates.value + (source to state)
         if (state is RssUiState.Success) {
-            when (source) {
-                RssSource.GOOGLE  -> googleItems  = state.items
-                RssSource.HATENA  -> hatenaItems  = state.items
-                RssSource.BLUESKY -> blueskyItems = state.items
-                RssSource.MISSKEY -> misskeyItems = state.items
-            }
-            if (_currentSource.value == source) _uiState.value = state
+            cachedItems[source] = state.items
         }
     }
 
@@ -398,7 +366,7 @@ class RssViewModel(
                             return@launch
                         }
                         val result = fetchBlueskyPageWithRetry(null)
-                        blueskyNextCursor = result.nextCursor
+                        paginationCursor[source] = result.nextCursor
                         result.items
                     }
                     RssSource.MISSKEY -> {
@@ -406,8 +374,8 @@ class RssViewModel(
                             setColumnState(source, RssUiState.Success(emptyList()))
                             return@launch
                         }
-                        val notes = repository.fetchMisskeyEntries(_misskeySearchQuery.value, settings)
-                        misskeyLastItemId = notes.lastOrNull()?.guid
+                        val notes = repository.fetchMisskeyEntries(searchQueries[source].orEmpty(), settings)
+                        paginationCursor[source] = notes.lastOrNull()?.guid
                         notes
                     }
                 }
@@ -419,31 +387,16 @@ class RssViewModel(
     }
 
     fun refresh() {
-        scope.launch(dispatcher) {
+        currentLoadJob?.cancel()
+        currentLoadJob = scope.launch(dispatcher) {
             _isRefreshing.value = true
             val source = _currentSource.value
-            when (source) {
-                RssSource.BLUESKY -> { blueskyNextCursor = null; blueskyItems = emptyList() }
-                RssSource.MISSKEY -> { misskeyLastItemId = null; misskeyItems = emptyList() }
-                else -> {}
-            }
+            resetSourceCache(source)
             try {
-                val newItems = when (source) {
-                    RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
-                    RssSource.HATENA -> repository.fetchAllHatenaEntries()
-                    RssSource.BLUESKY -> {
-                        val result = fetchBlueskyPageWithRetry(null)
-                        blueskyNextCursor = result.nextCursor
-                        result.items
-                    }
-                    RssSource.MISSKEY -> {
-                        val items = fetchMisskeyEntries()
-                        misskeyLastItemId = items.lastOrNull()?.guid
-                        items
-                    }
-                }
+                val newItems = fetchInitial(source)
                 updateList(newItems, source)
             } catch (e: Exception) {
+                Napier.w("refresh failed: ${e.message}")
                 _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
             } finally {
                 _isRefreshing.value = false
@@ -452,31 +405,12 @@ class RssViewModel(
     }
 
     private fun updateList(newItems: List<RssItem>, source: RssSource) {
-        val currentItems = when (source) {
-            RssSource.GOOGLE -> googleItems
-            RssSource.HATENA -> hatenaItems
-            RssSource.BLUESKY -> blueskyItems
-            RssSource.MISSKEY -> misskeyItems
-        }
-
-        // 重複を排除してマージ
-        val merged = (newItems + currentItems)
+        val current = cachedItems[source].orEmpty()
+        val merged = (newItems + current)
             .distinctBy { it.link }
-            .sortedByDescending {
-                if (source == RssSource.HATENA || source == RssSource.BLUESKY || source == RssSource.MISSKEY) {
-                    app.focus.personal.util.DateUtils.parseIso8601ToMillis(it.pubDate)
-                } else {
-                    app.focus.personal.util.DateUtils.parseRfc822ToMillis(it.pubDate)
-                }
-            }
+            .sortedByDescending { it.pubDateMillis }
 
-        when (source) {
-            RssSource.GOOGLE -> googleItems = merged
-            RssSource.HATENA -> hatenaItems = merged
-            RssSource.BLUESKY -> blueskyItems = merged
-            RssSource.MISSKEY -> misskeyItems = merged
-        }
-
+        cachedItems[source] = merged
         if (_currentSource.value == source) {
             _uiState.value = RssUiState.Success(merged)
         }

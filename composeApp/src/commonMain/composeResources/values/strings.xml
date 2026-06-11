@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- アプリ・画面タイトル -->
+    <string name="app_name">Focus</string>
+    <string name="screen_title_feed">News Feed</string>
+    <string name="screen_title_web_content">News Content</string>
+    <string name="screen_title_settings">設定</string>
+    <string name="screen_title_mute_words">ミュートワード</string>
+
+    <!-- ソース -->
+    <string name="source_google">Google</string>
+    <string name="source_hatena">はてな</string>
+    <string name="source_bluesky">BlueSky</string>
+    <string name="source_misskey">Misskey</string>
+
+    <!-- 共通 -->
+    <string name="cd_settings">設定</string>
+    <string name="cd_refresh">更新</string>
+    <string name="cd_clear">クリア</string>
+    <string name="cd_back">戻る</string>
+    <string name="cd_delete">削除</string>
+    <string name="cd_open_in_browser">ブラウザで開く</string>
+
+    <!-- フィード -->
+    <string name="search_placeholder">検索...</string>
+    <string name="error_prefix">Error: %1$s</string>
+    <string name="hatena_user_count">%1$d users</string>
+
+    <!-- 設定 -->
+    <string name="settings_mute_words_summary">すべてのソースで除外するワードを設定</string>
+
+    <!-- ミュートワード -->
+    <string name="mute_words_description">追加したワードを含む記事はすべてのソースで非表示になります。</string>
+    <string name="mute_words_input_label">ミュートするワード</string>
+    <string name="mute_words_add_button">追加</string>
+    <string name="mute_words_empty">ミュートワードはありません</string>
+
+    <!-- BlueSky ログイン -->
+    <string name="bluesky_login_title">BlueSky Login</string>
+    <string name="bluesky_login_description">「見たくないものは見ない」設定（ミュートワード等）を反映するためにログインが必要です。</string>
+    <string name="bluesky_rate_limit_error">アクセス制限がかかりました。数分〜数十分待ってから再度お試しください。</string>
+    <string name="bluesky_handle_label">Handle or Email</string>
+    <string name="bluesky_password_label">App Password</string>
+    <string name="bluesky_cd_show_password">Show password</string>
+    <string name="bluesky_cd_hide_password">Hide password</string>
+    <string name="bluesky_login_button">Login</string>
+    <string name="bluesky_2fa_description">認証コードがメールで送信されました。入力してください。</string>
+    <string name="bluesky_2fa_label">Verification Code</string>
+    <string name="bluesky_verify_button">Verify Code</string>
+
+    <!-- Misskey 設定 -->
+    <string name="misskey_settings_title">Misskey 設定</string>
+    <string name="misskey_settings_description">インスタンスURLを入力してください。APIトークンは任意です（入力するとローカルタイムラインを取得します）。</string>
+    <string name="misskey_instance_url_label">インスタンスURL (例: misskey.io)</string>
+    <string name="misskey_api_token_label">APIトークン（任意）</string>
+    <string name="misskey_connect_button">接続</string>
+</resources>

@@ -34,6 +34,15 @@ import androidx.compose.ui.Modifier
 import app.focus.personal.ui.components.SectionDivider
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssViewModel
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.cd_back
+import focus.composeapp.generated.resources.cd_delete
+import focus.composeapp.generated.resources.mute_words_add_button
+import focus.composeapp.generated.resources.mute_words_description
+import focus.composeapp.generated.resources.mute_words_empty
+import focus.composeapp.generated.resources.mute_words_input_label
+import focus.composeapp.generated.resources.screen_title_mute_words
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,10 +59,10 @@ fun MuteWordSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ミュートワード") },
+                title = { Text(stringResource(Res.string.screen_title_mute_words)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "戻る")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
                     }
                 },
             )
@@ -66,7 +75,7 @@ fun MuteWordSettingsScreen(
                 .padding(horizontal = FocusSpacing.lg),
         ) {
             Text(
-                text = "追加したワードを含む記事はすべてのソースで非表示になります。",
+                text = stringResource(Res.string.mute_words_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = FocusSpacing.md),
@@ -79,7 +88,7 @@ fun MuteWordSettingsScreen(
                 OutlinedTextField(
                     value = newWord,
                     onValueChange = { newWord = it.replace("\n", "") },
-                    label = { Text("ミュートするワード") },
+                    label = { Text(stringResource(Res.string.mute_words_input_label)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
@@ -92,7 +101,7 @@ fun MuteWordSettingsScreen(
                     },
                     enabled = newWord.isNotBlank() && !isLoading,
                 ) {
-                    Text("追加")
+                    Text(stringResource(Res.string.mute_words_add_button))
                 }
             }
             SectionDivider(modifier = Modifier.padding(vertical = FocusSpacing.md))
@@ -108,7 +117,7 @@ fun MuteWordSettingsScreen(
                 }
             } else if (muteWords.isEmpty()) {
                 Text(
-                    text = "ミュートワードはありません",
+                    text = stringResource(Res.string.mute_words_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = FocusSpacing.sm),
@@ -130,7 +139,7 @@ fun MuteWordSettingsScreen(
                             IconButton(onClick = { viewModel.deleteMuteWord(word) }) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = "削除",
+                                    contentDescription = stringResource(Res.string.cd_delete),
                                     tint = MaterialTheme.colorScheme.error,
                                 )
                             }

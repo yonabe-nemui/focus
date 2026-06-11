@@ -40,6 +40,19 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssUiState
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.bluesky_2fa_description
+import focus.composeapp.generated.resources.bluesky_2fa_label
+import focus.composeapp.generated.resources.bluesky_cd_hide_password
+import focus.composeapp.generated.resources.bluesky_cd_show_password
+import focus.composeapp.generated.resources.bluesky_handle_label
+import focus.composeapp.generated.resources.bluesky_login_button
+import focus.composeapp.generated.resources.bluesky_login_description
+import focus.composeapp.generated.resources.bluesky_login_title
+import focus.composeapp.generated.resources.bluesky_password_label
+import focus.composeapp.generated.resources.bluesky_rate_limit_error
+import focus.composeapp.generated.resources.bluesky_verify_button
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -67,12 +80,12 @@ fun BlueskyLoginScreen(
         verticalArrangement = Arrangement.Top,
     ) {
         Text(
-            text = "BlueSky Login",
+            text = stringResource(Res.string.bluesky_login_title),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(bottom = FocusSpacing.sm),
         )
         Text(
-            text = "「見たくないものは見ない」設定（ミュートワード等）を反映するためにログインが必要です。",
+            text = stringResource(Res.string.bluesky_login_description),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .fillMaxWidth()
@@ -82,7 +95,7 @@ fun BlueskyLoginScreen(
         if (uiState is RssUiState.Error) {
             val errorMessage =
                 if (uiState.message.contains("429") || uiState.message.contains("RateLimitExceeded")) {
-                    "アクセス制限がかかりました。数分〜数十分待ってから再度お試しください。"
+                    stringResource(Res.string.bluesky_rate_limit_error)
                 } else {
                     uiState.message
                 }
@@ -105,7 +118,7 @@ fun BlueskyLoginScreen(
             TextField(
                 value = handle,
                 onValueChange = { handle = it.replace("\n", "") },
-                label = { Text("Handle or Email") },
+                label = { Text(stringResource(Res.string.bluesky_handle_label)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = FocusSpacing.sm)
@@ -122,13 +135,15 @@ fun BlueskyLoginScreen(
             TextField(
                 value = password,
                 onValueChange = { password = it.replace("\n", "") },
-                label = { Text("App Password") },
+                label = { Text(stringResource(Res.string.bluesky_password_label)) },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = !isLoading) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            contentDescription = stringResource(
+                                if (passwordVisible) Res.string.bluesky_cd_hide_password else Res.string.bluesky_cd_show_password
+                            ),
                         )
                     }
                 },
@@ -157,19 +172,19 @@ fun BlueskyLoginScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Login")
+                    Text(stringResource(Res.string.bluesky_login_button))
                 }
             }
         } else {
             Text(
-                text = "認証コードがメールで送信されました。入力してください。",
+                text = stringResource(Res.string.bluesky_2fa_description),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = FocusSpacing.lg),
             )
             TextField(
                 value = authCode,
                 onValueChange = { authCode = it.replace("\n", "").replace(" ", "").uppercase() },
-                label = { Text("Verification Code") },
+                label = { Text(stringResource(Res.string.bluesky_2fa_label)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = FocusSpacing.lg),
@@ -189,7 +204,7 @@ fun BlueskyLoginScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Verify Code")
+                    Text(stringResource(Res.string.bluesky_verify_button))
                 }
             }
         }

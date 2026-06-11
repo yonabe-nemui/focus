@@ -18,6 +18,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import app.focus.personal.ui.components.SectionDivider
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.cd_back
+import focus.composeapp.generated.resources.screen_title_mute_words
+import focus.composeapp.generated.resources.screen_title_settings
+import focus.composeapp.generated.resources.settings_mute_words_summary
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,10 +34,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("設定") },
+                title = { Text(stringResource(Res.string.screen_title_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "戻る")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.cd_back))
                     }
                 },
             )
@@ -39,8 +45,8 @@ fun SettingsScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ListItem(
-                headlineContent = { Text("ミュートワード") },
-                supportingContent = { Text("すべてのソースで除外するワードを設定") },
+                headlineContent = { Text(stringResource(Res.string.screen_title_mute_words)) },
+                supportingContent = { Text(stringResource(Res.string.settings_mute_words_summary)) },
                 trailingContent = {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,

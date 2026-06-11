@@ -27,6 +27,9 @@ import app.focus.personal.model.RssItem
 import app.focus.personal.ui.theme.FocusShape
 import app.focus.personal.ui.theme.FocusSpacing
 import coil3.compose.AsyncImage
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.hatena_user_count
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * フィードの1アイテム。Card・elevation を使わずフラットなレイアウト。
@@ -158,7 +161,7 @@ private fun NewsItem(item: RssItem) {
                 }
                 item.bookmarkCount?.let { count ->
                     Text(
-                        text = "$count users",
+                        text = stringResource(Res.string.hatena_user_count, count),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )

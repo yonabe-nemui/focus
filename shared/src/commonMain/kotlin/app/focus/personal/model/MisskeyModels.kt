@@ -59,6 +59,7 @@ fun MisskeyNote.toRssItem(instanceUrl: String): RssItem {
         authorName = user.name ?: "@${user.username}",
         authorAvatarUrl = user.avatarUrl,
         imageUrls = imageUrls,
-        imageFullUrls = imageFullUrls
+        imageFullUrls = imageFullUrls,
+        pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(createdAt)
     )
 }

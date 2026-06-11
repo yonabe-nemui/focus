@@ -56,6 +56,7 @@ fun HatenaItem.toRssItem(): RssItem {
         description = description,
         pubDate = date,
         guid = link,
-        bookmarkCount = bookmarkCount
+        bookmarkCount = bookmarkCount,
+        pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(date)
     )
 }

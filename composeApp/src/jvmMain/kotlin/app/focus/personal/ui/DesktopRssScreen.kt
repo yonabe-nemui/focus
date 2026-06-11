@@ -57,14 +57,25 @@ import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
 import app.focus.personal.viewmodel.RssViewModel
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.app_name
+import focus.composeapp.generated.resources.cd_clear
+import focus.composeapp.generated.resources.cd_refresh
+import focus.composeapp.generated.resources.cd_settings
+import focus.composeapp.generated.resources.search_placeholder
+import focus.composeapp.generated.resources.source_bluesky
+import focus.composeapp.generated.resources.source_google
+import focus.composeapp.generated.resources.source_hatena
+import focus.composeapp.generated.resources.source_misskey
+import org.jetbrains.compose.resources.stringResource
 
-private val RssSource.displayName: String
-    get() = when (this) {
-        RssSource.GOOGLE  -> "Google"
-        RssSource.HATENA  -> "はてな"
-        RssSource.BLUESKY -> "BlueSky"
-        RssSource.MISSKEY -> "Misskey"
-    }
+@Composable
+private fun sourceDisplayName(source: RssSource): String = when (source) {
+    RssSource.GOOGLE  -> stringResource(Res.string.source_google)
+    RssSource.HATENA  -> stringResource(Res.string.source_hatena)
+    RssSource.BLUESKY -> stringResource(Res.string.source_bluesky)
+    RssSource.MISSKEY -> stringResource(Res.string.source_misskey)
+}
 
 private val RssSource.icon: ImageVector
     get() = when (this) {
@@ -92,10 +103,10 @@ fun DesktopRssScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Focus") },
+                title = { Text(stringResource(Res.string.app_name)) },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "設定")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.cd_settings))
                     }
                 },
             )
@@ -107,7 +118,7 @@ fun DesktopRssScreen(
                 .padding(padding),
         ) {
             val minColumnWidth = 280.dp
-            val sourceCount = RssSource.values().size
+            val sourceCount = RssSource.entries.size
             val fitsAll = maxWidth >= minColumnWidth * sourceCount
             val columnWidth = if (fitsAll) maxWidth / sourceCount else minColumnWidth
 
@@ -115,7 +126,7 @@ fun DesktopRssScreen(
             else Modifier.fillMaxSize().horizontalScroll(rememberScrollState())
 
             Row(modifier = rowModifier) {
-                RssSource.values().forEachIndexed { index, source ->
+                RssSource.entries.forEachIndexed { index, source ->
                     FeedColumn(
                         source = source,
                         uiState = columnStates[source] ?: RssUiState.Loading,
@@ -178,7 +189,7 @@ private fun FeedColumn(
                     )
                     Spacer(Modifier.width(FocusSpacing.sm))
                     Text(
-                        text = source.displayName,
+                        text = sourceDisplayName(source),
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f),
                     )
@@ -192,7 +203,7 @@ private fun FeedColumn(
                             } else {
                                 Icon(
                                     Icons.Default.Refresh,
-                                    contentDescription = "更新",
+                                    contentDescription = stringResource(Res.string.cd_refresh),
                                     modifier = Modifier.size(18.dp),
                                 )
                             }
@@ -203,14 +214,14 @@ private fun FeedColumn(
                     OutlinedTextField(
                         value = localSearchQuery,
                         onValueChange = { localSearchQuery = it.replace("\n", "") },
-                        placeholder = { Text("検索...", style = MaterialTheme.typography.bodySmall) },
+                        placeholder = { Text(stringResource(Res.string.search_placeholder), style = MaterialTheme.typography.bodySmall) },
                         leadingIcon = {
                             Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                         },
                         trailingIcon = {
                             if (localSearchQuery.isNotEmpty()) {
                                 IconButton(onClick = { localSearchQuery = ""; onSearch("") }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "クリア", modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.cd_clear), modifier = Modifier.size(16.dp))
                                 }
                             }
                         },

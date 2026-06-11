@@ -49,7 +49,9 @@ data class RssItem(
     @XmlElement(false)
     val authorAvatarUrl: String? = null,
     val imageUrls: List<String>? = null,
-    val imageFullUrls: List<String>? = null
+    val imageFullUrls: List<String>? = null,
+    // 各クライアントが pubDate をパースして正規化した値を入れる。0 = パース失敗・未設定。
+    val pubDateMillis: Long = 0L
 )
 
 @Serializable

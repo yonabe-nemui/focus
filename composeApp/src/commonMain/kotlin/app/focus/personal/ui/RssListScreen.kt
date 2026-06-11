@@ -44,6 +44,17 @@ import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
 import app.focus.personal.viewmodel.RssViewModel
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.cd_clear
+import focus.composeapp.generated.resources.cd_settings
+import focus.composeapp.generated.resources.error_prefix
+import focus.composeapp.generated.resources.screen_title_feed
+import focus.composeapp.generated.resources.search_placeholder
+import focus.composeapp.generated.resources.source_bluesky
+import focus.composeapp.generated.resources.source_google
+import focus.composeapp.generated.resources.source_hatena
+import focus.composeapp.generated.resources.source_misskey
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,10 +78,10 @@ fun RssListScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("News Feed") },
+                    title = { Text(stringResource(Res.string.screen_title_feed)) },
                     actions = {
                         IconButton(onClick = onNavigateToSettings) {
-                            Icon(Icons.Default.Settings, contentDescription = "設定")
+                            Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.cd_settings))
                         }
                     },
                 )
@@ -78,22 +89,22 @@ fun RssListScreen(
                     Tab(
                         selected = currentSource == RssSource.GOOGLE,
                         onClick = { viewModel.setSource(RssSource.GOOGLE) },
-                        text = { Text("Google") },
+                        text = { Text(stringResource(Res.string.source_google)) },
                     )
                     Tab(
                         selected = currentSource == RssSource.HATENA,
                         onClick = { viewModel.setSource(RssSource.HATENA) },
-                        text = { Text("はてな") },
+                        text = { Text(stringResource(Res.string.source_hatena)) },
                     )
                     Tab(
                         selected = currentSource == RssSource.BLUESKY,
                         onClick = { viewModel.setSource(RssSource.BLUESKY) },
-                        text = { Text("BlueSky") },
+                        text = { Text(stringResource(Res.string.source_bluesky)) },
                     )
                     Tab(
                         selected = currentSource == RssSource.MISSKEY,
                         onClick = { viewModel.setSource(RssSource.MISSKEY) },
-                        text = { Text("Misskey") },
+                        text = { Text(stringResource(Res.string.source_misskey)) },
                     )
                 }
             }
@@ -127,12 +138,12 @@ fun RssListScreen(
                     OutlinedTextField(
                         value = localQuery,
                         onValueChange = onQueryChange,
-                        placeholder = { Text("検索...") },
+                        placeholder = { Text(stringResource(Res.string.search_placeholder)) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         trailingIcon = {
                             if (localQuery.isNotEmpty()) {
                                 IconButton(onClick = { onQueryChange(""); viewModel.searchFeed("") }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "クリア")
+                                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.cd_clear))
                                 }
                             }
                         },
@@ -192,7 +203,7 @@ fun RssListScreen(
                         is RssUiState.Error -> {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "Error: ${state.message}",
+                                    text = stringResource(Res.string.error_prefix, state.message),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
