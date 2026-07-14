@@ -42,8 +42,9 @@ class BlueskyClient(private val client: HttpClient) {
             setBody(bodyMap)
         }
 
+        // レスポンスボディは accessJwt/refreshJwt を含むためログに出さない
         val responseBody = response.body<String>()
-        Napier.d("BlueSky createSession response [${response.status}]: $responseBody")
+        Napier.d("BlueSky createSession status: ${response.status}")
 
         if (response.status == HttpStatusCode.OK) {
             return json.decodeFromString<BlueskySession>(responseBody)
