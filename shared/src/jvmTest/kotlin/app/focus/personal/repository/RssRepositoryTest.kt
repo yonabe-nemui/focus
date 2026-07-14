@@ -12,7 +12,6 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -48,8 +47,7 @@ class RssRepositoryTest {
         database = FocusDatabase(driver)
     }
 
-    @Test
-    fun testFetchAllGoogleTopics() = runTest {
+    private fun createRepository(): RssRepository {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = mockXml,
@@ -58,11 +56,18 @@ class RssRepositoryTest {
             )
         }
         val client = HttpClient(mockEngine)
-        val googleApi = GoogleRssClient(client)
-        val hatenaApi = HatenaRssClient(client)
-        val blueskyApi = BlueskyClient(client)
-        val misskeyApi = MisskeyClient(client)
-        val repository = RssRepository(database, googleApi, hatenaApi, blueskyApi, misskeyApi)
+        return RssRepository(
+            database = database,
+            googleApi = GoogleRssClient(client),
+            hatenaApi = HatenaRssClient(client),
+            blueskyApi = BlueskyClient(client),
+            misskeyApi = MisskeyClient(client)
+        )
+    }
+
+    @Test
+    fun testFetchAllGoogleTopics() = runTest {
+        val repository = createRepository()
 
         // データの取得を実行
         val items = repository.fetchAllGoogleTopics()
@@ -72,5 +77,33 @@ class RssRepositoryTest {
         // 最新順（News 2 -> News 1）になっていることを確認
         assertEquals("News 2 (Newer)", items[0].title)
         assertEquals("News 1 (Older)", items[1].title)
+    }
+
+    @Test
+    fun testMuteWordFiltersFeed() = runTest {
+        val repository = createRepository()
+        repository.addMuteWord("Older")
+
+        val items = repository.fetchAllGoogleTopics()
+
+        assertEquals(1, items.size)
+        assertEquals("News 2 (Newer)", items[0].title)
+    }
+
+    @Test
+    fun testMuteWordsPersistedInDatabase() = runTest {
+        val repository = createRepository()
+        repository.addMuteWord("foo")
+        repository.addMuteWord("foo") // 重複追加は無視される
+
+        // 別インスタンスからも DB 経由で読めること（永続化の確認）
+        val another = createRepository()
+        assertEquals(listOf("foo"), another.fetchMuteWords())
+
+        another.deleteMuteWord("foo")
+        assertEquals(emptyList(), another.fetchMuteWords())
+
+        // 削除も DB に反映されている
+        assertEquals(emptyList(), createRepository().fetchMuteWords())
     }
 }

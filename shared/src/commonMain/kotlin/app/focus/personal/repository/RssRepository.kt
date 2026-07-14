@@ -1,16 +1,12 @@
 package app.focus.personal.repository
 
-import app.focus.personal.db.BlueskySessionEntity
 import app.focus.personal.db.FocusDatabase
-import app.focus.personal.db.RssChannelEntity
-import app.focus.personal.db.RssItemEntity
 import app.focus.personal.model.BlueskyPost
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.HatenaItem
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.MutedWord
 import app.focus.personal.model.PagedFeedResponse
-import app.focus.personal.model.RssFeed
 import app.focus.personal.model.RssItem
 import app.focus.personal.model.toRssItem
 import app.focus.personal.network.BlueskyClient
@@ -22,8 +18,6 @@ import io.github.aakira.napier.Napier
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -102,6 +96,7 @@ class RssRepository(
             .map { it.copy(pubDateMillis = DateUtils.parseRfc822ToMillis(it.pubDate)) }
             .distinctBy { it.guid ?: it.link }
             .sortedByDescending { it.pubDateMillis }
+            .applyLocalMuteWords()
     }
 
     override suspend fun fetchAllHatenaEntries(): List<RssItem> = coroutineScope {
@@ -114,6 +109,7 @@ class RssRepository(
             .distinctBy { it.link }
             .map { it.toRssItem() }
             .sortedByDescending { it.pubDateMillis }
+            .applyLocalMuteWords()
     }
 
     override suspend fun loginBluesky(
@@ -162,9 +158,6 @@ class RssRepository(
         return session
     }
 
-    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> =
-        fetchBlueskyPage(query, session, null).items
-
     override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse {
         val mutedWords = if (session != null) getCachedMutedWords(session) else emptyList()
 
@@ -190,6 +183,7 @@ class RssRepository(
             }
             .map { it.toRssItem() }
             .sortedByDescending { it.pubDateMillis }
+            .applyLocalMuteWords()
 
         return PagedFeedResponse(items, nextCursor)
     }
@@ -211,6 +205,7 @@ class RssRepository(
         return notes
             .map { it.toRssItem(settings.instanceUrl) }
             .sortedByDescending { it.pubDateMillis }
+            .applyLocalMuteWords()
     }
 
     private suspend fun <T> fetchMisskeySafe(label: String, block: suspend () -> List<T>): List<T> = try {
@@ -240,78 +235,40 @@ class RssRepository(
         queries?.clearMisskeySettings()
     }
 
-    override suspend fun fetchMuteWords(): List<String> = emptyList()
-    override suspend fun addMuteWord(word: String) = Unit
-    override suspend fun deleteMuteWord(word: String) = Unit
+    // --- ローカルミュートワード ---
+    // DB があれば永続化し、なければメモリのみ保持（Web はセッション内のみ有効）。
 
-    private fun saveFeed(feed: RssFeed, dbCategory: String) {
-        val db = database ?: return
-        val q = queries ?: return
-        db.transaction {
-            q.deleteChannelByCategory(dbCategory)
-            q.insertChannel(
-                title = feed.channel.title,
-                link = feed.channel.link,
-                description = feed.channel.description ?: "",
-                category = dbCategory
-            )
-            val channelId = q.lastInsertedId().executeAsOne()
-            feed.channel.items.forEach { item ->
-                q.insertItem(
-                    channelId = channelId,
-                    title = item.title,
-                    link = item.link,
-                    description = item.description ?: "",
-                    pubDate = item.pubDate ?: "",
-                    pubDateMillis = DateUtils.parseRfc822ToMillis(item.pubDate),
-                    guid = item.guid ?: ""
-                )
-            }
+    private var localMuteWords: MutableList<String>? = null
+
+    private fun loadLocalMuteWords(): MutableList<String> {
+        localMuteWords?.let { return it }
+        val loaded = queries?.selectAllMuteWords()?.executeAsList()?.toMutableList() ?: mutableListOf()
+        localMuteWords = loaded
+        return loaded
+    }
+
+    override suspend fun fetchMuteWords(): List<String> = loadLocalMuteWords().toList()
+
+    override suspend fun addMuteWord(word: String) {
+        val words = loadLocalMuteWords()
+        if (word !in words) {
+            words.add(word)
+            queries?.insertMuteWord(word)
         }
     }
 
-    fun getPagedItemsByCategory(
-        dbCategory: String,
-        limit: Long = 20,
-        offset: Long = 0
-    ): Flow<List<RssItem>> = flow {
-        val q = queries
-        if (q == null) {
-            emit(emptyList())
-            return@flow
-        }
-        val items = q.selectPagedItemsByCategory(dbCategory, limit, offset).executeAsList().map { entity ->
-            RssItem(
-                title = entity.title,
-                link = entity.link,
-                description = entity.description,
-                pubDate = entity.pubDate,
-                guid = entity.guid
-            )
-        }
-        emit(items)
+    override suspend fun deleteMuteWord(word: String) {
+        loadLocalMuteWords().remove(word)
+        queries?.deleteMuteWord(word)
     }
 
-    fun getItemsByCategory(dbCategory: String): Flow<List<RssItem>> = flow {
-        val q = queries
-        if (q == null) {
-            emit(emptyList())
-            return@flow
-        }
-        val channel = q.selectAllChannelsByCategory(dbCategory).executeAsOneOrNull()
-        if (channel != null) {
-            val items = q.selectItemsByChannelId(channel.id).executeAsList().map { entity ->
-                RssItem(
-                    title = entity.title,
-                    link = entity.link,
-                    description = entity.description,
-                    pubDate = entity.pubDate,
-                    guid = entity.guid
-                )
-            }
-            emit(items)
-        } else {
-            emit(emptyList())
+    // タイトル + 本文にローカルミュートワードを適用（BlueSky 公式ミュートワードとは独立）
+    private fun List<RssItem>.applyLocalMuteWords(): List<RssItem> {
+        val words = loadLocalMuteWords()
+        if (words.isEmpty()) return this
+        return filter { item ->
+            val text = "${item.title} ${item.description.orEmpty()}"
+            words.none { matchesMutedWord(text, it) }
         }
     }
 }

@@ -1,23 +1,3 @@
-CREATE TABLE RssChannelEntity (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    link TEXT NOT NULL,
-    description TEXT NOT NULL,
-    category TEXT NOT NULL -- 'topic' or 'category'
-);
-
-CREATE TABLE RssItemEntity (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    channelId INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    link TEXT NOT NULL,
-    description TEXT,
-    pubDate TEXT,
-    pubDateMillis INTEGER,
-    guid TEXT,
-    FOREIGN KEY (channelId) REFERENCES RssChannelEntity(id) ON DELETE CASCADE
-);
-
 CREATE TABLE BlueskySessionEntity (
     handle TEXT PRIMARY KEY,
     accessJwt TEXT NOT NULL,
@@ -26,39 +6,15 @@ CREATE TABLE BlueskySessionEntity (
     isActive INTEGER NOT NULL DEFAULT 0 -- 0 for false, 1 for true
 );
 
--- Queries
-insertChannel:
-INSERT INTO RssChannelEntity(title, link, description, category)
-VALUES (?, ?, ?, ?);
-
-lastInsertedId:
-SELECT last_insert_rowid();
-
-insertItem:
-INSERT INTO RssItemEntity(channelId, title, link, description, pubDate, pubDateMillis, guid)
-VALUES (?, ?, ?, ?, ?, ?, ?);
-
-selectAllChannelsByCategory:
-SELECT * FROM RssChannelEntity WHERE category = ?;
-
-selectItemsByChannelId:
-SELECT * FROM RssItemEntity WHERE channelId = ? ORDER BY pubDateMillis DESC;
-
-selectPagedItemsByCategory:
-SELECT item.* FROM RssItemEntity AS item
-JOIN RssChannelEntity AS channel ON item.channelId = channel.id
-WHERE channel.category = ?
-ORDER BY item.pubDateMillis DESC
-LIMIT ? OFFSET ?;
-
-deleteChannelByCategory:
-DELETE FROM RssChannelEntity WHERE category = ?;
-
 CREATE TABLE MisskeySettingsEntity (
     id INTEGER PRIMARY KEY,
     instanceUrl TEXT NOT NULL,
     apiToken TEXT,
     isActive INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE MuteWordEntity (
+    word TEXT PRIMARY KEY
 );
 
 -- Bluesky Session Queries
@@ -85,3 +41,13 @@ SELECT * FROM MisskeySettingsEntity WHERE isActive = 1 LIMIT 1;
 
 clearMisskeySettings:
 DELETE FROM MisskeySettingsEntity;
+
+-- Mute Word Queries
+insertMuteWord:
+INSERT OR IGNORE INTO MuteWordEntity(word) VALUES (?);
+
+deleteMuteWord:
+DELETE FROM MuteWordEntity WHERE word = ?;
+
+selectAllMuteWords:
+SELECT word FROM MuteWordEntity ORDER BY word;

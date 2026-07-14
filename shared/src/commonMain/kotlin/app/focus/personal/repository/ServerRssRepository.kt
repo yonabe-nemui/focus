@@ -20,9 +20,6 @@ class ServerRssRepository(
 
     override suspend fun fetchAllHatenaEntries(): List<RssItem> = apiClient.fetchHatenaFeed()
 
-    override suspend fun fetchBlueskyEntries(query: String, session: BlueskySession?): List<RssItem> =
-        fetchBlueskyPage(query, session, null).items
-
     override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse =
         apiClient.fetchBlueskyPage(session?.accessJwt ?: "", query, cursor)
 

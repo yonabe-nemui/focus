@@ -34,9 +34,6 @@ class FocusApiClient(
     suspend fun fetchHatenaFeed(): List<RssItem> =
         client.get("$baseUrl/api/feed/hatena").body()
 
-    suspend fun fetchBlueskyFeed(accessJwt: String, query: String): List<RssItem> =
-        fetchBlueskyPage(accessJwt, query, null).items
-
     suspend fun fetchBlueskyPage(accessJwt: String, query: String, cursor: String?): PagedFeedResponse {
         val response: HttpResponse = client.post("$baseUrl/api/feed/bluesky") {
             contentType(ContentType.Application.Json)
@@ -47,9 +44,6 @@ class FocusApiClient(
         }
         return response.body()
     }
-
-    suspend fun fetchMisskeyFeed(instanceUrl: String, apiToken: String?, query: String): List<RssItem> =
-        fetchMisskeyPage(instanceUrl, apiToken, query, null)
 
     suspend fun fetchMisskeyPage(instanceUrl: String, apiToken: String?, query: String, untilId: String?): List<RssItem> {
         val response: HttpResponse = client.post("$baseUrl/api/feed/misskey") {

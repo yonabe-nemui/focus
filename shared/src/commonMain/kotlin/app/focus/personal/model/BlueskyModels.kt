@@ -11,11 +11,6 @@ data class BlueskySession(
 )
 
 @Serializable
-data class BlueskyPreferences(
-    val mutedWords: List<MutedWord> = emptyList()
-)
-
-@Serializable
 data class MutedWord(
     val value: String,
     val targets: List<String> = listOf("content")
