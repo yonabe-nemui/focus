@@ -34,4 +34,18 @@ class DateUtilsTest {
         assertEquals(0, DateUtils.parseRfc822ToMillis("invalid date"))
         assertEquals(0, DateUtils.parseRfc822ToMillis(null))
     }
+
+    @Test
+    fun testParseRfc822WithZoneName() {
+        // Google News RSS は GMT 表記を使う
+        val gmt = DateUtils.parseRfc822ToMillis("Tue, 15 Jul 2026 09:00:00 GMT")
+        val utc = DateUtils.parseRfc822ToMillis("Tue, 15 Jul 2026 09:00:00 +0000")
+        assertEquals(utc, gmt, "GMT should equal +0000")
+
+        val est = DateUtils.parseRfc822ToMillis("Tue, 15 Jul 2026 04:00:00 EST")
+        assertEquals(utc, est, "EST (-0500) 04:00 should equal 09:00 UTC")
+
+        // 未知のゾーン名は UTC 扱いでパース自体は成功する
+        assertTrue(DateUtils.parseRfc822ToMillis("Tue, 15 Jul 2026 09:00:00 XYZ") > 0)
+    }
 }
