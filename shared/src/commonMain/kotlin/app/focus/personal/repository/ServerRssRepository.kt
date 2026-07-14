@@ -9,12 +9,12 @@ import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.FocusApiClient
 
 class ServerRssRepository(
-    private val database: FocusDatabase?,
+    database: FocusDatabase?,
     private val apiClient: FocusApiClient,
     private val blueskyApi: BlueskyClient
 ) : FeedRepository {
 
-    private val queries = database?.focusDatabaseQueries
+    private val sessionStore = SessionStore(database)
 
     override suspend fun fetchAllGoogleTopics(): List<RssItem> = apiClient.fetchGoogleFeed()
 
@@ -33,33 +33,11 @@ class ServerRssRepository(
         return session
     }
 
-    override fun getSavedBlueskySession(): BlueskySession? {
-        return queries?.getActiveBlueskySession()?.executeAsOneOrNull()?.let { entity ->
-            BlueskySession(
-                accessJwt = entity.accessJwt,
-                refreshJwt = entity.refreshJwt,
-                handle = entity.handle,
-                did = entity.did
-            )
-        }
-    }
+    override fun getSavedBlueskySession(): BlueskySession? = sessionStore.getBlueskySession()
 
-    override fun saveBlueskySession(session: BlueskySession) {
-        queries?.transaction {
-            queries.clearActiveBlueskySession()
-            queries.upsertBlueskySession(
-                handle = session.handle,
-                accessJwt = session.accessJwt,
-                refreshJwt = session.refreshJwt,
-                did = session.did,
-                isActive = 1L
-            )
-        }
-    }
+    override fun saveBlueskySession(session: BlueskySession) = sessionStore.saveBlueskySession(session)
 
-    override fun clearBlueskySession() {
-        queries?.clearActiveBlueskySession()
-    }
+    override fun clearBlueskySession() = sessionStore.clearBlueskySession()
 
     override suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession {
         val session = blueskyApi.refreshSession(refreshJwt)
@@ -73,25 +51,11 @@ class ServerRssRepository(
     override suspend fun fetchMisskeyPage(query: String, settings: MisskeySettings, untilId: String?): List<RssItem> =
         apiClient.fetchMisskeyPage(settings.instanceUrl, settings.apiToken, query, untilId)
 
-    override fun getSavedMisskeySettings(): MisskeySettings? {
-        return database?.focusDatabaseQueries?.getActiveMisskeySettings()?.executeAsOneOrNull()?.let { entity ->
-            MisskeySettings(
-                instanceUrl = entity.instanceUrl,
-                apiToken = entity.apiToken
-            )
-        }
-    }
+    override fun getSavedMisskeySettings(): MisskeySettings? = sessionStore.getMisskeySettings()
 
-    override fun saveMisskeySettings(settings: MisskeySettings) {
-        database?.focusDatabaseQueries?.upsertMisskeySettings(
-            instanceUrl = settings.instanceUrl,
-            apiToken = settings.apiToken
-        )
-    }
+    override fun saveMisskeySettings(settings: MisskeySettings) = sessionStore.saveMisskeySettings(settings)
 
-    override fun clearMisskeySettings() {
-        database?.focusDatabaseQueries?.clearMisskeySettings()
-    }
+    override fun clearMisskeySettings() = sessionStore.clearMisskeySettings()
 
     override suspend fun fetchMuteWords(): List<String> = apiClient.getMuteWords()
 

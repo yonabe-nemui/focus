@@ -29,6 +29,7 @@ class RssRepository(
     private val misskeyApi: MisskeyClient
 ) : FeedRepository {
     private val queries = database?.focusDatabaseQueries
+    private val sessionStore = SessionStore(database)
 
     private val googleTopics = listOf(
         "WORLD", "NATION", "BUSINESS", "TECHNOLOGY",
@@ -122,32 +123,12 @@ class RssRepository(
         return session
     }
 
-    override fun getSavedBlueskySession(): BlueskySession? {
-        return queries?.getActiveBlueskySession()?.executeAsOneOrNull()?.let { entity ->
-            BlueskySession(
-                accessJwt = entity.accessJwt,
-                refreshJwt = entity.refreshJwt,
-                handle = entity.handle,
-                did = entity.did
-            )
-        }
-    }
+    override fun getSavedBlueskySession(): BlueskySession? = sessionStore.getBlueskySession()
 
-    override fun saveBlueskySession(session: BlueskySession) {
-        queries?.transaction {
-            queries.clearActiveBlueskySession()
-            queries.upsertBlueskySession(
-                handle = session.handle,
-                accessJwt = session.accessJwt,
-                refreshJwt = session.refreshJwt,
-                did = session.did,
-                isActive = 1L
-            )
-        }
-    }
+    override fun saveBlueskySession(session: BlueskySession) = sessionStore.saveBlueskySession(session)
 
     override fun clearBlueskySession() {
-        queries?.clearActiveBlueskySession()
+        sessionStore.clearBlueskySession()
         mutedWordsCache = null
         mutedWordsCacheAt = 0L
     }
@@ -215,25 +196,11 @@ class RssRepository(
         emptyList()
     }
 
-    override fun getSavedMisskeySettings(): MisskeySettings? {
-        return queries?.getActiveMisskeySettings()?.executeAsOneOrNull()?.let { entity ->
-            MisskeySettings(
-                instanceUrl = entity.instanceUrl,
-                apiToken = entity.apiToken
-            )
-        }
-    }
+    override fun getSavedMisskeySettings(): MisskeySettings? = sessionStore.getMisskeySettings()
 
-    override fun saveMisskeySettings(settings: MisskeySettings) {
-        queries?.upsertMisskeySettings(
-            instanceUrl = settings.instanceUrl,
-            apiToken = settings.apiToken
-        )
-    }
+    override fun saveMisskeySettings(settings: MisskeySettings) = sessionStore.saveMisskeySettings(settings)
 
-    override fun clearMisskeySettings() {
-        queries?.clearMisskeySettings()
-    }
+    override fun clearMisskeySettings() = sessionStore.clearMisskeySettings()
 
     // --- ローカルミュートワード ---
     // DB があれば永続化し、なければメモリのみ保持（Web はセッション内のみ有効）。
