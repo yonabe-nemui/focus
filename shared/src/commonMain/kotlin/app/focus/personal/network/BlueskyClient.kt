@@ -48,20 +48,23 @@ class BlueskyClient(private val client: HttpClient) {
 
         if (response.status == HttpStatusCode.OK) {
             return json.decodeFromString<BlueskySession>(responseBody)
-        } else if (response.status == HttpStatusCode.Unauthorized) {
+        }
+        if (response.status == HttpStatusCode.TooManyRequests ||
+            responseBody.contains("RateLimitExceeded", ignoreCase = true)
+        ) {
+            throw BlueskyException.RateLimited()
+        }
+        if (response.status == HttpStatusCode.Unauthorized) {
             val is2fa = responseBody.contains("AuthFactor", ignoreCase = true) ||
                     responseBody.contains("sign in code", ignoreCase = true) ||
                     responseBody.contains("sign on code", ignoreCase = true)
-            if (is2fa && authCode == null) {
-                throw Exception("AuthFactorRequired")
-            } else if (is2fa && authCode != null) {
-                throw Exception("AuthFactorInvalid")
-            } else {
-                throw Exception("Unauthorized: $responseBody")
+            when {
+                is2fa && authCode == null -> throw BlueskyException.AuthFactorRequired()
+                is2fa -> throw BlueskyException.AuthFactorInvalid()
+                else -> throw BlueskyException.Unauthorized(responseBody)
             }
-        } else {
-            throw Exception("HTTP ${response.status}: $responseBody")
         }
+        throw BlueskyException.Http(response.status.toString(), responseBody)
     }
 
     suspend fun refreshSession(refreshJwt: String): BlueskySession {

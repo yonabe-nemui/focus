@@ -4,6 +4,7 @@ import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssItem
+import app.focus.personal.network.BlueskyException
 import app.focus.personal.repository.FeedRepository
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
@@ -15,10 +16,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/** エラーの種別。文言化は UI 層がこの種別に応じてリソースから行う。 */
+enum class FeedErrorKind { GENERIC, AUTH_CODE_INVALID, RATE_LIMITED }
+
 sealed class RssUiState {
     object Loading : RssUiState()
     data class Success(val items: List<RssItem>) : RssUiState()
-    data class Error(val message: String) : RssUiState()
+    data class Error(
+        val message: String,
+        val kind: FeedErrorKind = FeedErrorKind.GENERIC,
+    ) : RssUiState()
 }
 
 enum class RssSource { GOOGLE, HATENA, BLUESKY, MISSKEY }
@@ -122,14 +129,17 @@ class RssViewModel(
                 loadAllTopics()
             } catch (e: Exception) {
                 Napier.e("BlueSky login failed", e)
-                when (e.message) {
-                    "AuthFactorRequired" -> {
+                when (e) {
+                    is BlueskyException.AuthFactorRequired -> {
                         Napier.i("2FA required for BlueSky login")
                         _is2faRequired.value = true
                         _uiState.value = RssUiState.Success(emptyList())
                     }
-                    "AuthFactorInvalid" -> {
-                        _uiState.value = RssUiState.Error("認証コードが正しくないか、期限が切れています。")
+                    is BlueskyException.AuthFactorInvalid -> {
+                        _uiState.value = RssUiState.Error(e.message.orEmpty(), FeedErrorKind.AUTH_CODE_INVALID)
+                    }
+                    is BlueskyException.RateLimited -> {
+                        _uiState.value = RssUiState.Error(e.message.orEmpty(), FeedErrorKind.RATE_LIMITED)
                     }
                     else -> {
                         _uiState.value = RssUiState.Error("Login failed: ${e.message}")
@@ -176,7 +186,7 @@ class RssViewModel(
             _uiState.value = RssUiState.Loading
             try {
                 val source = _currentSource.value
-                val newItems = fetchInitial(source)
+                val newItems = fetchFirstPage(source)
                 updateList(newItems, source)
             } catch (e: Exception) {
                 Napier.w("loadAllTopics failed: ${e.message}")
@@ -185,7 +195,10 @@ class RssViewModel(
         }
     }
 
-    private suspend fun fetchInitial(source: RssSource): List<RssItem> = when (source) {
+    // ソースの初回ページを取得し、ページネーションカーソルを保存する。
+    // 未ログイン(BlueSky)・未設定(Misskey)のソースは空リストを返す。
+    // モバイル単一カラム・デスクトップマルチカラムの両方から使う。
+    private suspend fun fetchFirstPage(source: RssSource): List<RssItem> = when (source) {
         RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
         RssSource.HATENA -> repository.fetchAllHatenaEntries()
         RssSource.BLUESKY -> {
@@ -194,9 +207,14 @@ class RssViewModel(
             result.items
         }
         RssSource.MISSKEY -> {
-            val items = fetchMisskeyEntries()
-            paginationCursor[RssSource.MISSKEY] = items.lastOrNull()?.guid
-            items
+            val settings = _misskeySettings.value
+            if (settings == null) {
+                emptyList()
+            } else {
+                val items = repository.fetchMisskeyEntries(searchQueries[RssSource.MISSKEY].orEmpty(), settings)
+                paginationCursor[RssSource.MISSKEY] = items.lastOrNull()?.guid
+                items
+            }
         }
     }
 
@@ -241,16 +259,6 @@ class RssViewModel(
             } finally {
                 _isLoadingMore.value = false
             }
-        }
-    }
-
-    private suspend fun fetchMisskeyEntries(): List<RssItem> {
-        val settings = _misskeySettings.value ?: return emptyList()
-        return try {
-            repository.fetchMisskeyEntries(query = searchQueries[RssSource.MISSKEY].orEmpty(), settings = settings)
-        } catch (e: Exception) {
-            Napier.w("Misskey fetch failed: ${e.message}")
-            emptyList()
         }
     }
 
@@ -357,29 +365,7 @@ class RssViewModel(
         scope.launch(dispatcher) {
             setColumnState(source, RssUiState.Loading)
             try {
-                val items: List<RssItem> = when (source) {
-                    RssSource.GOOGLE -> repository.fetchAllGoogleTopics()
-                    RssSource.HATENA -> repository.fetchAllHatenaEntries()
-                    RssSource.BLUESKY -> {
-                        if (_blueskySession.value == null) {
-                            setColumnState(source, RssUiState.Success(emptyList()))
-                            return@launch
-                        }
-                        val result = fetchBlueskyPageWithRetry(null)
-                        paginationCursor[source] = result.nextCursor
-                        result.items
-                    }
-                    RssSource.MISSKEY -> {
-                        val settings = _misskeySettings.value ?: run {
-                            setColumnState(source, RssUiState.Success(emptyList()))
-                            return@launch
-                        }
-                        val notes = repository.fetchMisskeyEntries(searchQueries[source].orEmpty(), settings)
-                        paginationCursor[source] = notes.lastOrNull()?.guid
-                        notes
-                    }
-                }
-                setColumnState(source, RssUiState.Success(items))
+                setColumnState(source, RssUiState.Success(fetchFirstPage(source)))
             } catch (e: Exception) {
                 setColumnState(source, RssUiState.Error(e.message ?: "Error"))
             }
@@ -393,7 +379,7 @@ class RssViewModel(
             val source = _currentSource.value
             resetSourceCache(source)
             try {
-                val newItems = fetchInitial(source)
+                val newItems = fetchFirstPage(source)
                 updateList(newItems, source)
             } catch (e: Exception) {
                 Napier.w("refresh failed: ${e.message}")
