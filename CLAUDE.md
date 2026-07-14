@@ -6,13 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-**Focus** は Kotlin Multiplatform 製のニュース集約アプリ。Google News・はてなブックマーク・BlueSky からコンテンツを取得する。コアコンセプトは「見たくないものは見ない」—— BlueSky のミュートワードを使ってクライアント側でコンテンツをフィルタリングする（BlueSky API はサーバー側でミュートワードを適用しないため）。
+**Focus** は Kotlin Multiplatform 製のニュース集約アプリ。Google News・はてなブックマーク・BlueSky・Misskey からコンテンツを取得する。コアコンセプトは「見たくないものは見ない」——2系統のミュートワードでクライアント側フィルタリングを行う:
+
+- **BlueSky 公式ミュートワード**: アカウントに設定済みのミュートワードを取得し、BlueSky フィードに適用（BlueSky API はサーバー側でミュートワードを適用しないため）
+- **ローカルミュートワード**: アプリ内設定画面で管理し、全ソースのフィードに適用。ローカル DB（`MuteWordEntity`）に永続化（DB のない Web はメモリ保持でセッション内のみ有効）
+
+リファクタリング・改善の計画は `REFACTORING_PLAN.md` を参照。
 
 ## ビルド・実行コマンド
 
 ```bash
-# Android
-.\gradlew.bat :composeApp:assembleDebug
+# Android（Android アプリモジュールは androidApp。composeApp ではない）
+.\gradlew.bat :androidApp:assembleDebug
 
 # Desktop (JVM)
 .\gradlew.bat :composeApp:run
@@ -20,29 +25,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # サーバー
 .\gradlew.bat :server:run
 
-# Web (Wasm - 高速)
-.\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
-
-# Web (JS - 旧ブラウザ対応)
+# Web (JS)
 .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
 ```
 
 iOS: `iosApp/` を Xcode で開く。
 
+**注意**: wasmJs ターゲットは SQLDelight が未対応のため無効化されている（`shared/build.gradle.kts`・`composeApp/build.gradle.kts` でコメントアウト中）。Web は JS ターゲットのみ。
+
 ## テスト実行
 
 ```bash
-# shared モジュールのマルチプラットフォームテスト
-.\gradlew.bat :shared:commonTest
+# shared のテスト（commonTest + jvmTest を JVM で実行。最速でカバレッジも広い）
+.\gradlew.bat :shared:jvmTest
+
+# shared の全ターゲットテスト
+.\gradlew.bat :shared:allTests
 
 # サーバーの JVM テスト
 .\gradlew.bat :server:test
-
-# Compose UI テスト
-.\gradlew.bat :composeApp:commonTest
 ```
 
-テストは `shared/src/commonTest/`（DateUtils の日付パーステスト等）と `server/src/test/`（Ktor エンドポイントテスト）に存在する。
+テストの場所:
+- `shared/src/commonTest/` — DateUtils の日付パーステスト等
+- `shared/src/jvmTest/` — RssRepository のテスト（インメモリ SQLite + MockEngine）
+- `server/src/test/` — Ktor エンドポイントテスト
 
 ## アーキテクチャ
 
@@ -52,21 +59,27 @@ iOS: `iosApp/` を Xcode で開く。
 - `androidApp/` — Android エントリーポイント（DI セットアップ・OkHttp HttpClient 初期化）
 - `server/` — Ktor Netty サーバー（ポート 8080）
 
-**データフロー:** `UI (composeApp)` → `RssViewModel (shared)` → `RssRepository (shared)` → ネットワーククライアント + SQLDelight DB
+**データフロー:** `UI (composeApp)` → `RssViewModel (shared)` → `FeedRepository (shared, interface)` → ネットワーククライアント + SQLDelight DB
+
+`FeedRepository` の実装は2つあり、プラットフォームで使い分ける:
+- `RssRepository` — 各ソースへ直接アクセス（iOS・Desktop・Web で使用）
+- `ServerRssRepository` — 自前 Ktor サーバー経由でアクセス（Android で使用。`FocusApiClient` でサーバーの `/api/feed/*` を叩く）
 
 **ネットワーククライアント** (`shared/src/commonMain/kotlin/.../network/`):
 - `GoogleRssClient` — Google News RSS (XML)
 - `HatenaRssClient` — はてなブックマーク RDF/RSS（ブックマーク数含む）
 - `BlueskyClient` — BlueSky XRPC API（セッション・投稿検索・ミュートワード設定）
+- `MisskeyClient` — Misskey API（ノート検索・ホームタイムライン）
+- `FocusApiClient` — 自前 Ktor サーバーの REST API クライアント（ServerRssRepository が使用）
 
 **プラットフォーム別 HTTP エンジン**（各エントリーポイントで注入）:
 - Android/Desktop/JVM: OkHttp
 - iOS: Darwin
 - Web: デフォルト JS エンジン
 
-**DI はフレームワーク不使用** — `MainActivity.kt`（Android）・`MainViewController.kt`（iOS）で手動インスタンス化。`DriverFactory` は `expect/actual` でプラットフォーム別 DB ドライバーを返す。
+**DI はフレームワーク不使用** — 各エントリーポイントで手動インスタンス化する: `MainActivity.kt`（Android）・`MainViewController.kt`（iOS）・`composeApp/src/jvmMain/.../main.kt`（Desktop）・`composeApp/src/webMain/.../main.kt`（Web。DB なしで `RssRepository(null, ...)` を構築）。`DriverFactory` は `expect/actual` でプラットフォーム別 DB ドライバーを返す。
 
-**全ソースの正規化:** 各クライアントは独自モデル（`BlueskyPost`, `HatenaRssItem` 等）を `RssItem` に変換して統一フィードとして扱う。
+**全ソースの正規化:** 各クライアントは独自モデル（`BlueskyPost`, `HatenaItem`, `MisskeyNote` 等）を `toRssItem()` で `RssItem` に変換して統一フィードとして扱う。
 
 ## 実装上の注意事項
 

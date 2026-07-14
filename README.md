@@ -1,95 +1,67 @@
-This is a Kotlin Multiplatform project targeting Android, iOS, Web, Desktop (JVM), Server.
+# Focus
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+**Focus** は Kotlin Multiplatform 製のニュース集約アプリです。Google News・はてなブックマーク・BlueSky・Misskey のコンテンツを統一フィードとして閲覧できます。
 
-* [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+コアコンセプトは「見たくないものは見ない」。ミュートワードによるクライアント側フィルタリングで、目にしたくない話題を除外して読書に集中できます。
 
-* [/server](./server/src/main/kotlin) is for the Ktor server application.
+対応プラットフォーム: **Android / iOS / Desktop (JVM) / Web (JS)**
 
-* [/shared](./shared/src) is for the code that will be shared between all targets in the project.
-  The most important subfolder is [commonMain](./shared/src/commonMain/kotlin). If preferred, you
-  can add code to the platform-specific folders here too.
+## 機能
 
-### Build and Run Android Application
+- Google News(トップ + 8トピック)・はてなブックマーク(人気/新着/IT)の横断フィード
+- BlueSky ログイン(2FA 対応)とタイムライン・投稿検索
+- Misskey インスタンス接続とホームタイムライン・ノート検索
+- ミュートワードによるフィルタリング
+  - BlueSky 公式ミュートワード(アカウント設定を取得して適用)
+  - ローカルミュートワード(アプリ内で管理し、全ソースに適用)
+- Desktop はソース別のマルチカラム表示、モバイルはタブ切り替え + 無限スクロール
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+## モジュール構成
 
-### Build and Run Desktop (JVM) Application
+| モジュール | 内容 |
+|---|---|
+| `shared/` | ViewModel・Repository・ネットワーククライアント・SQLDelight DB・データモデル |
+| `composeApp/` | Compose Multiplatform UI(Android・iOS・Desktop・Web 共通) |
+| `androidApp/` | Android エントリーポイント |
+| `iosApp/` | iOS エントリーポイント(Xcode プロジェクト) |
+| `server/` | Ktor Netty サーバー(ポート 8080。Android クライアントが使用) |
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+## ビルド・実行
 
-### Build and Run Server
+```shell
+# Android(APK ビルド)
+.\gradlew.bat :androidApp:assembleDebug
 
-To build and run the development version of the server, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :server:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :server:run
-  ```
+# Desktop (JVM)
+.\gradlew.bat :composeApp:run
 
-### Build and Run Web Application
+# Web (JS)
+.\gradlew.bat :composeApp:jsBrowserDevelopmentRun
 
-To build and run the development version of the web app, use the run configuration from the run widget
-in your IDE's toolbar or run it directly from the terminal:
-- for the Wasm target (faster, modern browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
-    ```
-- for the JS target (slower, supports older browsers):
-  - on macOS/Linux
-    ```shell
-    ./gradlew :composeApp:jsBrowserDevelopmentRun
-    ```
-  - on Windows
-    ```shell
-    .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
-    ```
+# サーバー
+.\gradlew.bat :server:run
+```
 
-### Build and Run iOS Application
+macOS / Linux では `.\gradlew.bat` を `./gradlew` に読み替えてください。
+iOS は `iosApp/` を Xcode で開いて実行します。
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+※ wasmJs ターゲットは SQLDelight が未対応のため現在無効化しています(Web は JS のみ)。
 
----
+## テスト
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html),
-[Compose Multiplatform](https://github.com/JetBrains/compose-multiplatform/#compose-multiplatform),
-[Kotlin/Wasm](https://kotl.in/wasm/)…
+```shell
+# shared のテスト(commonTest + jvmTest)
+.\gradlew.bat :shared:jvmTest
 
-We would appreciate your feedback on Compose/Web and Kotlin/Wasm in the public Slack channel [#compose-web](https://slack-chats.kotlinlang.org/c/compose-web).
-If you face any issues, please report them on [YouTrack](https://youtrack.jetbrains.com/newIssue?project=CMP).
+# サーバーのテスト
+.\gradlew.bat :server:test
+```
+
+## 技術スタック
+
+Compose Multiplatform (Material 3) / Ktor / SQLDelight / kotlinx-serialization / xmlutil / kotlinx-datetime / Napier
+
+## 開発ドキュメント
+
+- [CLAUDE.md](./CLAUDE.md) — アーキテクチャ・実装上の注意・デザインガイドライン
+- [REFACTORING_PLAN.md](./REFACTORING_PLAN.md) — リファクタリング・改善計画
