@@ -2,9 +2,6 @@ package app.focus.personal
 
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
-import app.focus.personal.model.PagedFeedResponse
-import app.focus.personal.model.RssItem
-import app.focus.personal.network.AddMuteWordRequest
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.BlueSkyFeedRequest
 import app.focus.personal.network.GoogleRssClient
@@ -21,7 +18,6 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
-import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -29,7 +25,6 @@ import io.ktor.server.routing.routing
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
-import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.serialization.json.Json
 
 fun main() {
@@ -37,18 +32,7 @@ fun main() {
         .start(wait = true)
 }
 
-val muteWordStore = CopyOnWriteArrayList<String>()
-
-private fun List<RssItem>.applyMuteWords(): List<RssItem> {
-    if (muteWordStore.isEmpty()) return this
-    return filter { item ->
-        val text = "${item.title} ${item.description ?: ""}".lowercase()
-        muteWordStore.none { word -> word.isNotEmpty() && text.contains(word.lowercase()) }
-    }
-}
-
-private fun PagedFeedResponse.applyMuteWords(): PagedFeedResponse =
-    PagedFeedResponse(items.applyMuteWords(), nextCursor)
+// ミュートワードのフィルタはクライアント側（MuteWordStore）で行うため、サーバーは素通しで返す。
 
 fun Application.module() {
     install(ContentNegotiation) {
@@ -75,21 +59,19 @@ fun Application.module() {
         }
         route("/api") {
             get("/feed/google") {
-                val items = repository.fetchAllGoogleTopics().applyMuteWords()
-                call.respond(items)
+                call.respond(repository.fetchAllGoogleTopics())
             }
             get("/feed/hatena") {
-                val items = repository.fetchAllHatenaEntries().applyMuteWords()
-                call.respond(items)
+                call.respond(repository.fetchAllHatenaEntries())
             }
             post("/feed/bluesky") {
                 try {
                     val request = call.receive<BlueSkyFeedRequest>()
-                    val session = if (request.accessJwt.isNotEmpty()) {
-                        BlueskySession(accessJwt = request.accessJwt, refreshJwt = "", handle = "", did = "")
-                    } else null
+                    val session = request.accessJwt?.takeIf { it.isNotEmpty() }?.let {
+                        BlueskySession(accessJwt = it, refreshJwt = "", handle = "", did = "")
+                    }
                     val pagedResult = repository.fetchBlueskyPage(request.query, session, request.cursor)
-                    call.respond(pagedResult.applyMuteWords())
+                    call.respond(pagedResult)
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "error")))
                 }
@@ -98,35 +80,11 @@ fun Application.module() {
                 try {
                     val request = call.receive<MisskeyFeedRequest>()
                     val settings = MisskeySettings(instanceUrl = request.instanceUrl, apiToken = request.apiToken)
-                    val items = repository.fetchMisskeyPage(request.query, settings, request.untilId).applyMuteWords()
+                    val items = repository.fetchMisskeyPage(request.query, settings, request.untilId)
                     call.respond(items)
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (e.message ?: "error")))
                 }
-            }
-            get("/mutewords") {
-                call.respond(muteWordStore.toList())
-            }
-            post("/mutewords") {
-                val request = call.receive<AddMuteWordRequest>()
-                val word = request.word.trim()
-                if (word.isEmpty()) {
-                    call.respond(HttpStatusCode.BadRequest, "word must not be empty")
-                    return@post
-                }
-                if (!muteWordStore.contains(word)) {
-                    muteWordStore.add(word)
-                }
-                call.respond(HttpStatusCode.OK)
-            }
-            delete("/mutewords") {
-                val word = call.request.queryParameters["word"]
-                if (word.isNullOrEmpty()) {
-                    call.respond(HttpStatusCode.BadRequest, "word parameter required")
-                    return@delete
-                }
-                muteWordStore.remove(word)
-                call.respond(HttpStatusCode.OK)
             }
         }
     }

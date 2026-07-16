@@ -28,8 +28,8 @@ class RssRepository(
     private val blueskyApi: BlueskyClient,
     private val misskeyApi: MisskeyClient
 ) : FeedRepository {
-    private val queries = database?.focusDatabaseQueries
     private val sessionStore = SessionStore(database)
+    private val muteWordStore = MuteWordStore(database)
 
     private val googleTopics = listOf(
         "WORLD", "NATION", "BUSINESS", "TECHNOLOGY",
@@ -56,19 +56,6 @@ class RssRepository(
         } catch (e: Exception) {
             Napier.w("BlueSky getMutedWords failed: ${e.message}")
             cached?.second ?: emptyList()
-        }
-    }
-
-    // ASCII のみのワードは単語境界マッチで誤検出を防ぐ ("book" が "facebook" にマッチしない)
-    // CJK 等を含む場合は単語境界の概念がないため部分一致を許容する
-    private val asciiOnly = Regex("^[\\x00-\\x7F]+$")
-
-    private fun matchesMutedWord(text: String, word: String): Boolean {
-        if (word.isEmpty()) return false
-        return if (asciiOnly.matches(word)) {
-            Regex("\\b${Regex.escape(word)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(text)
-        } else {
-            text.contains(word, ignoreCase = true)
         }
     }
 
@@ -160,7 +147,7 @@ class RssRepository(
         val items = posts
             .filter { post ->
                 val text = post.record.text
-                mutedWords.none { matchesMutedWord(text, it.value) }
+                mutedWords.none { MuteWordStore.matchesMutedWord(text, it.value) }
             }
             .map { it.toRssItem() }
             .sortedByDescending { it.pubDateMillis }
@@ -203,39 +190,12 @@ class RssRepository(
     override fun clearMisskeySettings() = sessionStore.clearMisskeySettings()
 
     // --- ローカルミュートワード ---
-    // DB があれば永続化し、なければメモリのみ保持（Web はセッション内のみ有効）。
 
-    private var localMuteWords: MutableList<String>? = null
+    override suspend fun fetchMuteWords(): List<String> = muteWordStore.getAll()
 
-    private fun loadLocalMuteWords(): MutableList<String> {
-        localMuteWords?.let { return it }
-        val loaded = queries?.selectAllMuteWords()?.executeAsList()?.toMutableList() ?: mutableListOf()
-        localMuteWords = loaded
-        return loaded
-    }
+    override suspend fun addMuteWord(word: String) = muteWordStore.add(word)
 
-    override suspend fun fetchMuteWords(): List<String> = loadLocalMuteWords().toList()
+    override suspend fun deleteMuteWord(word: String) = muteWordStore.delete(word)
 
-    override suspend fun addMuteWord(word: String) {
-        val words = loadLocalMuteWords()
-        if (word !in words) {
-            words.add(word)
-            queries?.insertMuteWord(word)
-        }
-    }
-
-    override suspend fun deleteMuteWord(word: String) {
-        loadLocalMuteWords().remove(word)
-        queries?.deleteMuteWord(word)
-    }
-
-    // タイトル + 本文にローカルミュートワードを適用（BlueSky 公式ミュートワードとは独立）
-    private fun List<RssItem>.applyLocalMuteWords(): List<RssItem> {
-        val words = loadLocalMuteWords()
-        if (words.isEmpty()) return this
-        return filter { item ->
-            val text = "${item.title} ${item.description.orEmpty()}"
-            words.none { matchesMutedWord(text, it) }
-        }
-    }
+    private fun List<RssItem>.applyLocalMuteWords(): List<RssItem> = muteWordStore.filter(this)
 }

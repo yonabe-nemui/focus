@@ -15,13 +15,18 @@ class ServerRssRepository(
 ) : FeedRepository {
 
     private val sessionStore = SessionStore(database)
+    private val muteWordStore = MuteWordStore(database)
 
-    override suspend fun fetchAllGoogleTopics(): List<RssItem> = apiClient.fetchGoogleFeed()
+    override suspend fun fetchAllGoogleTopics(): List<RssItem> =
+        muteWordStore.filter(apiClient.fetchGoogleFeed())
 
-    override suspend fun fetchAllHatenaEntries(): List<RssItem> = apiClient.fetchHatenaFeed()
+    override suspend fun fetchAllHatenaEntries(): List<RssItem> =
+        muteWordStore.filter(apiClient.fetchHatenaFeed())
 
-    override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse =
-        apiClient.fetchBlueskyPage(session?.accessJwt ?: "", query, cursor)
+    override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse {
+        val page = apiClient.fetchBlueskyPage(session?.accessJwt, query, cursor)
+        return PagedFeedResponse(muteWordStore.filter(page.items), page.nextCursor)
+    }
 
     override suspend fun loginBluesky(
         handle: String,
@@ -49,7 +54,7 @@ class ServerRssRepository(
         fetchMisskeyPage(query, settings, null)
 
     override suspend fun fetchMisskeyPage(query: String, settings: MisskeySettings, untilId: String?): List<RssItem> =
-        apiClient.fetchMisskeyPage(settings.instanceUrl, settings.apiToken, query, untilId)
+        muteWordStore.filter(apiClient.fetchMisskeyPage(settings.instanceUrl, settings.apiToken, query, untilId))
 
     override fun getSavedMisskeySettings(): MisskeySettings? = sessionStore.getMisskeySettings()
 
@@ -57,9 +62,10 @@ class ServerRssRepository(
 
     override fun clearMisskeySettings() = sessionStore.clearMisskeySettings()
 
-    override suspend fun fetchMuteWords(): List<String> = apiClient.getMuteWords()
+    // ローカルミュートワードは他プラットフォームと同様にクライアント側で管理・適用する
+    override suspend fun fetchMuteWords(): List<String> = muteWordStore.getAll()
 
-    override suspend fun addMuteWord(word: String) = apiClient.addMuteWord(word)
+    override suspend fun addMuteWord(word: String) = muteWordStore.add(word)
 
-    override suspend fun deleteMuteWord(word: String) = apiClient.deleteMuteWord(word)
+    override suspend fun deleteMuteWord(word: String) = muteWordStore.delete(word)
 }
