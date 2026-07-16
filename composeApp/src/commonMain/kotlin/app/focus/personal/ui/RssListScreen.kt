@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.ImeAction
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.FeedItem
 import app.focus.personal.ui.components.feedErrorMessage
+import app.focus.personal.ui.components.sourceDisplayName
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
@@ -48,10 +49,6 @@ import focus.composeapp.generated.resources.cd_clear
 import focus.composeapp.generated.resources.cd_settings
 import focus.composeapp.generated.resources.screen_title_feed
 import focus.composeapp.generated.resources.search_placeholder
-import focus.composeapp.generated.resources.source_bluesky
-import focus.composeapp.generated.resources.source_google
-import focus.composeapp.generated.resources.source_hatena
-import focus.composeapp.generated.resources.source_misskey
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,26 +79,13 @@ fun RssListScreen(
                     },
                 )
                 PrimaryTabRow(selectedTabIndex = currentSource.ordinal) {
-                    Tab(
-                        selected = currentSource == RssSource.GOOGLE,
-                        onClick = { viewModel.setSource(RssSource.GOOGLE) },
-                        text = { Text(stringResource(Res.string.source_google)) },
-                    )
-                    Tab(
-                        selected = currentSource == RssSource.HATENA,
-                        onClick = { viewModel.setSource(RssSource.HATENA) },
-                        text = { Text(stringResource(Res.string.source_hatena)) },
-                    )
-                    Tab(
-                        selected = currentSource == RssSource.BLUESKY,
-                        onClick = { viewModel.setSource(RssSource.BLUESKY) },
-                        text = { Text(stringResource(Res.string.source_bluesky)) },
-                    )
-                    Tab(
-                        selected = currentSource == RssSource.MISSKEY,
-                        onClick = { viewModel.setSource(RssSource.MISSKEY) },
-                        text = { Text(stringResource(Res.string.source_misskey)) },
-                    )
+                    RssSource.entries.forEach { source ->
+                        Tab(
+                            selected = currentSource == source,
+                            onClick = { viewModel.setSource(source) },
+                            text = { Text(sourceDisplayName(source)) },
+                        )
+                    }
                 }
             }
         },

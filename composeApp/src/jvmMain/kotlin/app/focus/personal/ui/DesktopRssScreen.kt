@@ -17,12 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Message
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,7 +38,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.focus.personal.model.BlueskySession
@@ -51,6 +46,8 @@ import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.FeedItem
 import app.focus.personal.ui.components.SectionDivider
 import app.focus.personal.ui.components.feedErrorMessage
+import app.focus.personal.ui.components.icon
+import app.focus.personal.ui.components.sourceDisplayName
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
@@ -61,27 +58,7 @@ import focus.composeapp.generated.resources.cd_clear
 import focus.composeapp.generated.resources.cd_refresh
 import focus.composeapp.generated.resources.cd_settings
 import focus.composeapp.generated.resources.search_placeholder
-import focus.composeapp.generated.resources.source_bluesky
-import focus.composeapp.generated.resources.source_google
-import focus.composeapp.generated.resources.source_hatena
-import focus.composeapp.generated.resources.source_misskey
 import org.jetbrains.compose.resources.stringResource
-
-@Composable
-private fun sourceDisplayName(source: RssSource): String = when (source) {
-    RssSource.GOOGLE  -> stringResource(Res.string.source_google)
-    RssSource.HATENA  -> stringResource(Res.string.source_hatena)
-    RssSource.BLUESKY -> stringResource(Res.string.source_bluesky)
-    RssSource.MISSKEY -> stringResource(Res.string.source_misskey)
-}
-
-private val RssSource.icon: ImageVector
-    get() = when (this) {
-        RssSource.GOOGLE  -> Icons.Default.RssFeed
-        RssSource.HATENA  -> Icons.Default.Bookmark
-        RssSource.BLUESKY -> Icons.Default.Cloud
-        RssSource.MISSKEY -> Icons.AutoMirrored.Filled.Message
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
