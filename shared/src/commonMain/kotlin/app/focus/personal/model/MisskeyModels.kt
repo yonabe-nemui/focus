@@ -21,7 +21,9 @@ data class MisskeyFile(
     val id: String,
     val type: String = "",
     val url: String = "",
-    val thumbnailUrl: String? = null
+    val thumbnailUrl: String? = null,
+    // 画像の代替テキスト（Misskey ではキャプション）
+    val comment: String? = null
 )
 
 @Serializable
@@ -41,15 +43,17 @@ data class MisskeySettings(
 fun MisskeyNote.toRssItem(instanceUrl: String): RssItem {
     val noteUrl = "https://$instanceUrl/notes/$id"
     val displayText = if (cw != null) "[$cw]\n${text ?: ""}" else (text ?: "")
-    val imageFiles = files.filter { it.type.startsWith("image/") }
+    // URL が空のファイルは除外し、サムネイル・原寸・alt のインデックスを揃える
+    val imageFiles = files.filter { it.type.startsWith("image/") && it.url.isNotEmpty() }
     val imageUrls = imageFiles
-        .map { it.thumbnailUrl ?: it.url }
-        .filter { it.isNotEmpty() }
+        .map { it.thumbnailUrl?.takeIf { url -> url.isNotEmpty() } ?: it.url }
         .takeIf { it.isNotEmpty() }
     val imageFullUrls = imageFiles
         .map { it.url }
-        .filter { it.isNotEmpty() }
         .takeIf { it.isNotEmpty() }
+    val imageAlts = imageFiles
+        .map { it.comment.orEmpty() }
+        .takeIf { imageFiles.isNotEmpty() }
     return RssItem(
         title = user.name ?: "@${user.username}",
         link = noteUrl,
@@ -60,6 +64,7 @@ fun MisskeyNote.toRssItem(instanceUrl: String): RssItem {
         authorAvatarUrl = user.avatarUrl,
         imageUrls = imageUrls,
         imageFullUrls = imageFullUrls,
+        imageAlts = imageAlts,
         pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(createdAt),
         kind = ItemKind.SNS_POST,
     )

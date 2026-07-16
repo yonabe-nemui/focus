@@ -83,6 +83,7 @@ fun BlueskyPost.toRssItem(): RssItem {
         authorAvatarUrl = author.avatar,
         imageUrls = images?.map { it.thumb },
         imageFullUrls = images?.map { it.fullsize },
+        imageAlts = images?.map { it.alt },
         pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(record.createdAt),
         kind = ItemKind.SNS_POST,
     )

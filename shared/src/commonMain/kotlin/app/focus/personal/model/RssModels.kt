@@ -50,6 +50,8 @@ data class RssItem(
     val authorAvatarUrl: String? = null,
     val imageUrls: List<String>? = null,
     val imageFullUrls: List<String>? = null,
+    // 画像の代替テキスト。imageUrls / imageFullUrls とインデックスで対応する
+    val imageAlts: List<String>? = null,
     // 各クライアントが pubDate をパースして正規化した値を入れる。0 = パース失敗・未設定。
     val pubDateMillis: Long = 0L,
     // XML(RSS)には存在しないため、パース時はデフォルトの NEWS になる。
