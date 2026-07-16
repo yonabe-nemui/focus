@@ -21,8 +21,9 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.FeedItem
+import app.focus.personal.ui.components.FeedListSkeleton
 import app.focus.personal.ui.components.SectionDivider
 import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.components.icon
@@ -128,6 +130,7 @@ fun DesktopFeedScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FeedColumn(
     source: FeedSource,
@@ -175,10 +178,7 @@ private fun FeedColumn(
                     if (!needsAuth) {
                         IconButton(onClick = onRefresh, enabled = !isLoading) {
                             if (isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                )
+                                LoadingIndicator(modifier = Modifier.size(18.dp))
                             } else {
                                 Icon(
                                     Icons.Default.Refresh,
@@ -242,12 +242,7 @@ private fun ColumnFeedList(
     onItemClick: (RssItem) -> Unit,
 ) {
     when (uiState) {
-        is FeedUiState.Loading -> Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularProgressIndicator()
-        }
+        is FeedUiState.Loading -> FeedListSkeleton(modifier = Modifier.fillMaxSize())
         is FeedUiState.Success -> LazyColumn(
             modifier = Modifier.fillMaxSize(),
         ) {

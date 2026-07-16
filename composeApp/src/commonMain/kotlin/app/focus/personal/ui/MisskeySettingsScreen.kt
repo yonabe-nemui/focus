@@ -14,7 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +43,7 @@ import focus.composeapp.generated.resources.misskey_settings_description
 import focus.composeapp.generated.resources.misskey_settings_title
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MisskeySettingsScreen(
     uiState: FeedUiState,
@@ -124,10 +126,9 @@ fun MisskeySettingsScreen(
             enabled = instanceUrl.isNotEmpty() && !isLoading,
         ) {
             if (isLoading) {
-                CircularProgressIndicator(
+                LoadingIndicator(
                     modifier = Modifier.height(20.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp,
                 )
             } else {
                 Text(stringResource(Res.string.misskey_connect_button))

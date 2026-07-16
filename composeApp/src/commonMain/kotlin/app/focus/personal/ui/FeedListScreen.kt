@@ -15,10 +15,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -27,6 +28,8 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.FeedItem
+import app.focus.personal.ui.components.FeedListSkeleton
 import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.components.sourceDisplayName
 import app.focus.personal.ui.theme.FocusSpacing
@@ -51,7 +55,7 @@ import focus.composeapp.generated.resources.screen_title_feed
 import focus.composeapp.generated.resources.search_placeholder
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FeedListScreen(
     viewModel: FeedViewModel,
@@ -132,16 +136,23 @@ fun FeedListScreen(
                         keyboardActions = KeyboardActions(onSearch = { viewModel.searchFeed(query) }),
                     )
                 }
+                val pullToRefreshState = rememberPullToRefreshState()
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
                     onRefresh = { viewModel.refresh() },
+                    state = pullToRefreshState,
                     modifier = Modifier.weight(1f),
+                    indicator = {
+                        PullToRefreshDefaults.LoadingIndicator(
+                            state = pullToRefreshState,
+                            isRefreshing = isRefreshing,
+                            modifier = Modifier.align(Alignment.TopCenter),
+                        )
+                    },
                 ) {
                     when (val state = uiState) {
                         is FeedUiState.Loading -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
-                            }
+                            FeedListSkeleton(modifier = Modifier.fillMaxSize())
                         }
                         is FeedUiState.Success -> {
                             val lazyListState = rememberLazyListState()
@@ -171,7 +182,7 @@ fun FeedListScreen(
                                                 .padding(FocusSpacing.lg),
                                             contentAlignment = Alignment.Center,
                                         ) {
-                                            CircularProgressIndicator(modifier = Modifier.size(FocusSpacing.xl))
+                                            LoadingIndicator(modifier = Modifier.size(FocusSpacing.xl))
                                         }
                                     }
                                 }

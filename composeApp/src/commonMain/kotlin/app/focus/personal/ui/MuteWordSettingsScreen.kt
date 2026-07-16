@@ -12,8 +12,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +45,7 @@ import focus.composeapp.generated.resources.mute_words_input_label
 import focus.composeapp.generated.resources.screen_title_mute_words
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MuteWordSettingsScreen(
     viewModel: FeedViewModel,
@@ -113,7 +114,7 @@ fun MuteWordSettingsScreen(
                         .padding(FocusSpacing.lg),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             } else if (muteWords.isEmpty()) {
                 Text(

@@ -17,7 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +59,7 @@ import focus.composeapp.generated.resources.bluesky_rate_limit_error
 import focus.composeapp.generated.resources.bluesky_verify_button
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BlueskyLoginScreen(
     is2faRequired: Boolean,
@@ -167,10 +168,9 @@ fun BlueskyLoginScreen(
                 enabled = handle.isNotEmpty() && password.isNotEmpty() && !isLoading,
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(
+                    LoadingIndicator(
                         modifier = Modifier.height(20.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(stringResource(Res.string.bluesky_login_button))
@@ -199,10 +199,9 @@ fun BlueskyLoginScreen(
                 enabled = authCode.isNotEmpty() && !isLoading,
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(
+                    LoadingIndicator(
                         modifier = Modifier.height(20.dp),
                         color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(stringResource(Res.string.bluesky_verify_button))
