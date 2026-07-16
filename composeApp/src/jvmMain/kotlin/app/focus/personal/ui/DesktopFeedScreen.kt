@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -38,7 +39,9 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -128,6 +131,7 @@ fun DesktopFeedScreen(
                         onSearch = { query -> viewModel.searchColumnFeed(source, query) },
                         onOpenInBrowser = onOpenInBrowser,
                         onAddMuteWord = { word -> viewModel.addMuteWordAndRefreshFeed(word) },
+                        onLoadMore = { viewModel.loadMore(source) },
                         modifier = Modifier
                             .width(columnWidth)
                             .fillMaxHeight(),
@@ -157,6 +161,7 @@ private fun FeedColumn(
     onSearch: (String) -> Unit,
     onOpenInBrowser: (String) -> Unit,
     onAddMuteWord: (String) -> Unit,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val hasSearch = source == FeedSource.BLUESKY || source == FeedSource.MISSKEY
@@ -249,6 +254,7 @@ private fun FeedColumn(
                 onRetry = onRefresh,
                 onOpenInBrowser = onOpenInBrowser,
                 onAddMuteWord = onAddMuteWord,
+                onLoadMore = onLoadMore,
             )
         }
     }
@@ -262,6 +268,7 @@ private fun ColumnFeedList(
     onRetry: () -> Unit,
     onOpenInBrowser: (String) -> Unit,
     onAddMuteWord: (String) -> Unit,
+    onLoadMore: () -> Unit,
 ) {
     when (uiState) {
         is FeedUiState.Loading -> FeedListSkeleton(modifier = Modifier.fillMaxSize())
@@ -274,7 +281,21 @@ private fun ColumnFeedList(
                     ),
                 )
             } else {
+                // モバイルと同じ末尾検知で次ページを読み込む(BlueSky/Misskey のみ ViewModel 側で有効)
+                val lazyListState = rememberLazyListState()
+                val shouldLoadMore by remember {
+                    derivedStateOf {
+                        val layoutInfo = lazyListState.layoutInfo
+                        val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index
+                            ?: return@derivedStateOf false
+                        lastVisible >= layoutInfo.totalItemsCount - 3
+                    }
+                }
+                LaunchedEffect(shouldLoadMore) {
+                    if (shouldLoadMore) onLoadMore()
+                }
                 LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(uiState.items) { item ->

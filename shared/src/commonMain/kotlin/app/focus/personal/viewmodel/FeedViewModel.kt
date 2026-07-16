@@ -222,7 +222,11 @@ class FeedViewModel(
     }
 
     fun loadMore() {
-        val source = _currentSource.value
+        loadMore(_currentSource.value)
+    }
+
+    /** 指定ソースの次ページを読み込む(デスクトップのカラム毎の無限スクロール用)。 */
+    fun loadMore(source: FeedSource) {
         if (_isLoadingMore.value) return
         if (source != FeedSource.BLUESKY && source != FeedSource.MISSKEY) return
 
@@ -253,6 +257,9 @@ class FeedViewModel(
                     paginationCursor[source] = nextCursor
                     if (_currentSource.value == source) {
                         _uiState.value = FeedUiState.Success(combined)
+                    }
+                    if (_columnStates.value[source] is FeedUiState.Success) {
+                        _columnStates.value = _columnStates.value + (source to FeedUiState.Success(combined))
                     }
                 } else {
                     paginationCursor[source] = null
