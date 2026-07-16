@@ -23,8 +23,8 @@
 | 9 | 検索クエリの二重管理による不整合 | UX | 中 | 低 | P3 ✅ |
 | 10 | shared 層の日本語ハードコード文字列 | 規約違反 | 低 | 低 | P3 ✅ |
 | 11 | Android サーバー URL のハードコード | 設定 | 中 | 低 | P3 ✅ |
-| 12 | 「Rss」命名の実態乖離 | 可読性 | 低 | 中 | P4 |
-| 13 | サーバー muteWordStore の永続化なし | 設計 | 中 | 中 | P4 |
+| 12 | 「Rss」命名の実態乖離 | 可読性 | 低 | 中 | P4 ✅ |
+| 13 | サーバー muteWordStore の永続化なし | 設計 | 中 | 中 | P4 ✅ |
 | 14 | DateUtils の残骸コメント・println・GMT 非対応 | 品質 | 低 | 低 | P1 ✅ |
 | 15 | タブ UI のコピペとソース表示情報の重複 | 冗長 | 低 | 低 | P3 ✅ |
 | 16 | Android edge-to-edge 未対応(Android 15 で実害) | UX | 高 | 中 | P5 |
@@ -211,9 +211,16 @@
 
 ---
 
-## フェーズ4: 大きめの設計改善(別途判断)
+## フェーズ4: 大きめの設計改善【対応済み 2026-07-17】
 
-影響範囲が広いため、フェーズ1〜3 完了後に着手可否を判断する。
+> 4-1 は FeedViewModel / FeedSource / FeedUiState / loadCurrentSource() /
+> createFeedViewModel() へのリネームと、`authorName != null` 判定の
+> `ItemKind`(NEWS / SNS_POST)化を実施。`RssItem` は RSS 由来の
+> XML パース用モデルとして名前を維持(UI モデル分離は見送り)。
+> 4-2 は「クライアント側フィルタへの一本化」を採用。ローカルミュートワードを
+> `MuteWordStore` に抽出して Android(ServerRssRepository)でも DB 永続化+
+> クライアント側適用とし、サーバーの muteWordStore と /api/mutewords を削除。
+> 4-3 の判定一本化は 4-2 に含めて完了。設定画面の文言で2系統の違いを明示した。
 
 ### 4-1. 「Rss」命名の見直し 【可読性】
 
