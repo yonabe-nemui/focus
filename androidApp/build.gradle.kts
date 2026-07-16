@@ -22,9 +22,26 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
     buildTypes {
+        // サーバー URL は gradle.properties の focus.android.serverUrl で上書き可能
+        // (実機からは PC の LAN IP を指定する)。空文字列ならサーバーを介さず各ソースへ直接アクセスする。
+        getByName("debug") {
+            buildConfigField(
+                "String",
+                "SERVER_BASE_URL",
+                "\"${providers.gradleProperty("focus.android.serverUrl").getOrElse("http://10.0.2.2:8080")}\"",
+            )
+        }
         getByName("release") {
             isMinifyEnabled = false
+            buildConfigField(
+                "String",
+                "SERVER_BASE_URL",
+                "\"${providers.gradleProperty("focus.android.serverUrl.release").getOrElse("")}\"",
+            )
         }
     }
 

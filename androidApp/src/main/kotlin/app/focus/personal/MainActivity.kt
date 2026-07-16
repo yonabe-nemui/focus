@@ -26,7 +26,8 @@ class MainActivity : ComponentActivity() {
                     scope = scope,
                     database = database,
                     engine = OkHttp,
-                    serverBaseUrl = "http://10.0.2.2:$SERVER_PORT",
+                    // 空文字列(URL 未設定)なら null にして各ソースへ直接アクセスする
+                    serverBaseUrl = BuildConfig.SERVER_BASE_URL.ifBlank { null },
                 )
             }
 
