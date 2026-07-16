@@ -5,7 +5,7 @@
     <string name="screen_title_feed">News Feed</string>
     <string name="screen_title_web_content">News Content</string>
     <string name="screen_title_settings">設定</string>
-    <string name="screen_title_mute_words">ミュートワード</string>
+    <string name="screen_title_mute_words">ローカルミュートワード</string>
 
     <!-- ソース -->
     <string name="source_google">Google</string>
@@ -36,10 +36,10 @@
     <string name="time_date_with_year">%1$d年%2$d月%3$d日</string>
 
     <!-- 設定 -->
-    <string name="settings_mute_words_summary">すべてのソースで除外するワードを設定</string>
+    <string name="settings_mute_words_summary">アプリ内で管理し、すべてのソースに適用するワードを設定</string>
 
     <!-- ミュートワード -->
-    <string name="mute_words_description">追加したワードを含む記事はすべてのソースで非表示になります。</string>
+    <string name="mute_words_description">追加したワードを含む記事はすべてのソースで非表示になります。BlueSky アカウントの公式ミュートワードはここには表示されず、BlueSky フィードにのみ自動適用されます。</string>
     <string name="mute_words_input_label">ミュートするワード</string>
     <string name="mute_words_add_button">追加</string>
     <string name="mute_words_empty">ミュートワードはありません</string>
