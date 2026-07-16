@@ -46,6 +46,7 @@ fun DesktopApp(
             when (val screen = currentScreen) {
                 is Screen.List -> DesktopFeedScreen(
                     viewModel = viewModel,
+                    onOpenInBrowser = onLinkClick,
                     onItemClick = { item ->
                         if (item.kind == ItemKind.SNS_POST) navigateTo(Screen.PostDetail(item))
                         else onLinkClick(item.link)

@@ -1,8 +1,10 @@
 package app.focus.personal.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,13 +15,24 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.focus.personal.LocalAppImageLoader
@@ -29,7 +42,14 @@ import app.focus.personal.ui.theme.FocusShape
 import app.focus.personal.ui.theme.FocusSpacing
 import coil3.compose.AsyncImage
 import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.dialog_cancel
 import focus.composeapp.generated.resources.hatena_user_count
+import focus.composeapp.generated.resources.menu_add_mute_word
+import focus.composeapp.generated.resources.menu_copy_link
+import focus.composeapp.generated.resources.menu_open_in_browser
+import focus.composeapp.generated.resources.mute_word_dialog_title
+import focus.composeapp.generated.resources.mute_words_add_button
+import focus.composeapp.generated.resources.mute_words_input_label
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -39,24 +59,110 @@ import org.jetbrains.compose.resources.stringResource
  * - SNS 投稿（kind = SNS_POST）: 左アバター + 右コンテンツ（Twitter 形式）
  * - ニュース/RSS（kind = NEWS）: タイトル + 説明 + 画像 + メタ情報
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FeedItem(
     item: RssItem,
     onClick: (RssItem) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenInBrowser: ((RssItem) -> Unit)? = null,
+    onAddMuteWord: ((String) -> Unit)? = null,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick(item) },
-    ) {
-        if (item.kind == ItemKind.SNS_POST) {
-            SnsPostItem(item = item)
-        } else {
-            NewsItem(item = item)
+    var isMenuOpen by remember { mutableStateOf(false) }
+    var isMuteDialogOpen by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = { onClick(item) },
+                    onLongClick = { isMenuOpen = true },
+                ),
+        ) {
+            if (item.kind == ItemKind.SNS_POST) {
+                SnsPostItem(item = item)
+            } else {
+                NewsItem(item = item)
+            }
+            SectionDivider()
         }
-        SectionDivider()
+        DropdownMenu(
+            expanded = isMenuOpen,
+            onDismissRequest = { isMenuOpen = false },
+        ) {
+            if (onOpenInBrowser != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.menu_open_in_browser)) },
+                    onClick = {
+                        isMenuOpen = false
+                        onOpenInBrowser(item)
+                    },
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.menu_copy_link)) },
+                onClick = {
+                    isMenuOpen = false
+                    clipboardManager.setText(AnnotatedString(item.link))
+                },
+            )
+            if (onAddMuteWord != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.menu_add_mute_word)) },
+                    onClick = {
+                        isMenuOpen = false
+                        isMuteDialogOpen = true
+                    },
+                )
+            }
+        }
     }
+
+    if (isMuteDialogOpen && onAddMuteWord != null) {
+        AddMuteWordDialog(
+            onConfirm = { word ->
+                isMuteDialogOpen = false
+                onAddMuteWord(word)
+            },
+            onDismiss = { isMuteDialogOpen = false },
+        )
+    }
+}
+
+/** フィードから直接ミュートワードを追加するダイアログ。 */
+@Composable
+private fun AddMuteWordDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var word by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.mute_word_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                value = word,
+                onValueChange = { word = it.replace("\n", "") },
+                label = { Text(stringResource(Res.string.mute_words_input_label)) },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(word.trim()) },
+                enabled = word.isNotBlank(),
+            ) {
+                Text(stringResource(Res.string.mute_words_add_button))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.dialog_cancel))
+            }
+        },
+    )
 }
 
 /** SNS 投稿: 左アバター + 右コンテンツ（Twitter/Bluesky 形式） */

@@ -66,7 +66,8 @@ fun App(
                                 navigateTo(Screen.WebView(item.link))
                             }
                         },
-                        onNavigateToSettings = { navigateTo(Screen.Settings) }
+                        onNavigateToSettings = { navigateTo(Screen.Settings) },
+                        onOpenInBrowser = onLinkClick,
                     )
                 }
                 is Screen.Settings -> {

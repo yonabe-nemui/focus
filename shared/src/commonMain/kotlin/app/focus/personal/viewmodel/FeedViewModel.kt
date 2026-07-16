@@ -6,6 +6,7 @@ import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssItem
 import app.focus.personal.network.BlueskyException
 import app.focus.personal.repository.FeedRepository
+import app.focus.personal.repository.MuteWordStore
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -329,6 +330,37 @@ class FeedViewModel(
             } catch (e: Exception) {
                 Napier.e("Failed to add mute word", e)
             }
+        }
+    }
+
+    /** フィードのコンテキストメニューからミュートワードを追加し、表示中のフィードへ即時反映する。 */
+    fun addMuteWordAndRefreshFeed(word: String) {
+        val trimmed = word.trim()
+        if (trimmed.isEmpty()) return
+        scope.launch(dispatcher) {
+            try {
+                repository.addMuteWord(trimmed)
+                _muteWords.value = repository.fetchMuteWords()
+                applyMuteWordToLoadedFeeds(trimmed)
+            } catch (e: Exception) {
+                Napier.e("Failed to add mute word from feed", e)
+            }
+        }
+    }
+
+    // 読み込み済みのキャッシュと表示状態からミュートワードに一致するアイテムを除外する
+    private fun applyMuteWordToLoadedFeeds(word: String) {
+        FeedSource.entries.forEach { source ->
+            cachedItems[source] = cachedItems[source].orEmpty().filterNot {
+                MuteWordStore.matchesMutedWord("${it.title} ${it.description.orEmpty()}", word)
+            }
+        }
+        val current = _uiState.value
+        if (current is FeedUiState.Success) {
+            _uiState.value = FeedUiState.Success(cachedItems[_currentSource.value].orEmpty())
+        }
+        _columnStates.value = _columnStates.value.mapValues { (source, state) ->
+            if (state is FeedUiState.Success) FeedUiState.Success(cachedItems[source].orEmpty()) else state
         }
     }
 

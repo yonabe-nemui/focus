@@ -67,6 +67,7 @@ fun FeedListScreen(
     viewModel: FeedViewModel,
     onItemClick: (RssItem) -> Unit,
     onNavigateToSettings: () -> Unit,
+    onOpenInBrowser: (String) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -188,7 +189,12 @@ fun FeedListScreen(
                                 modifier = Modifier.fillMaxSize(),
                             ) {
                                 items(state.items) { item ->
-                                    FeedItem(item = item, onClick = onItemClick)
+                                    FeedItem(
+                                        item = item,
+                                        onClick = onItemClick,
+                                        onOpenInBrowser = { onOpenInBrowser(it.link) },
+                                        onAddMuteWord = { viewModel.addMuteWordAndRefreshFeed(it) },
+                                    )
                                 }
                                 if (isLoadingMore) {
                                     item {

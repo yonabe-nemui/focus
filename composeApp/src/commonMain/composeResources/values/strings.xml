@@ -23,6 +23,11 @@
 
     <!-- フィード -->
     <string name="search_placeholder">検索...</string>
+    <string name="menu_open_in_browser">ブラウザで開く</string>
+    <string name="menu_copy_link">リンクをコピー</string>
+    <string name="menu_add_mute_word">ミュートワードを追加…</string>
+    <string name="mute_word_dialog_title">ミュートワードを追加</string>
+    <string name="dialog_cancel">キャンセル</string>
     <string name="error_generic">読み込みに失敗しました。</string>
     <string name="error_detail_suffix">%1$s（%2$s）</string>
     <string name="error_retry_button">再試行</string>

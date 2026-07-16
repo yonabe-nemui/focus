@@ -74,6 +74,7 @@ fun DesktopFeedScreen(
     viewModel: FeedViewModel,
     onItemClick: (RssItem) -> Unit,
     onNavigateToSettings: () -> Unit,
+    onOpenInBrowser: (String) -> Unit,
 ) {
     val columnStates by viewModel.columnStates.collectAsState()
     val blueskySession by viewModel.blueskySession.collectAsState()
@@ -125,6 +126,8 @@ fun DesktopFeedScreen(
                         searchQuery = searchQueries[source].orEmpty(),
                         onQueryChange = { query -> viewModel.setSearchQuery(source, query) },
                         onSearch = { query -> viewModel.searchColumnFeed(source, query) },
+                        onOpenInBrowser = onOpenInBrowser,
+                        onAddMuteWord = { word -> viewModel.addMuteWordAndRefreshFeed(word) },
                         modifier = Modifier
                             .width(columnWidth)
                             .fillMaxHeight(),
@@ -152,6 +155,8 @@ private fun FeedColumn(
     searchQuery: String,
     onQueryChange: (String) -> Unit,
     onSearch: (String) -> Unit,
+    onOpenInBrowser: (String) -> Unit,
+    onAddMuteWord: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val hasSearch = source == FeedSource.BLUESKY || source == FeedSource.MISSKEY
@@ -242,6 +247,8 @@ private fun FeedColumn(
                 onItemClick = onItemClick,
                 isSearching = searchQuery.isNotBlank(),
                 onRetry = onRefresh,
+                onOpenInBrowser = onOpenInBrowser,
+                onAddMuteWord = onAddMuteWord,
             )
         }
     }
@@ -253,6 +260,8 @@ private fun ColumnFeedList(
     onItemClick: (RssItem) -> Unit,
     isSearching: Boolean,
     onRetry: () -> Unit,
+    onOpenInBrowser: (String) -> Unit,
+    onAddMuteWord: (String) -> Unit,
 ) {
     when (uiState) {
         is FeedUiState.Loading -> FeedListSkeleton(modifier = Modifier.fillMaxSize())
@@ -269,7 +278,12 @@ private fun ColumnFeedList(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(uiState.items) { item ->
-                        FeedItem(item = item, onClick = onItemClick)
+                        FeedItem(
+                            item = item,
+                            onClick = onItemClick,
+                            onOpenInBrowser = { onOpenInBrowser(it.link) },
+                            onAddMuteWord = onAddMuteWord,
+                        )
                     }
                 }
             }
