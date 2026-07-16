@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import app.focus.personal.db.DriverFactory
@@ -16,6 +17,8 @@ import io.ktor.client.engine.okhttp.OkHttp
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Android 15 以降は OS 側で強制されるため、全バージョンで明示的に有効化して挙動を揃える
+        enableEdgeToEdge()
         Napier.base(DebugAntilog())
 
         setContent {
