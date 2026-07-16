@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import app.focus.personal.LocalAppImageLoader
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.ArticleHeader
+import app.focus.personal.ui.components.relativeTimeLabel
 import app.focus.personal.ui.theme.FocusShape
 import app.focus.personal.ui.theme.FocusSpacing
 import coil3.compose.AsyncImage
@@ -74,7 +75,7 @@ fun PostDetailScreen(
             ArticleHeader(
                 authorName = authorName,
                 authorAvatarUrl = authorAvatarUrl,
-                pubDate = item.pubDate,
+                pubDate = relativeTimeLabel(item.pubDateMillis, item.pubDate),
                 avatarSize = 48.dp,
                 modifier = Modifier.padding(bottom = FocusSpacing.md),
             )

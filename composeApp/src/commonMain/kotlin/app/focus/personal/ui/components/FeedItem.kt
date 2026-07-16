@@ -87,7 +87,7 @@ private fun SnsPostItem(item: RssItem) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
-                item.pubDate?.let { date ->
+                relativeTimeLabel(item.pubDateMillis, item.pubDate)?.let { date ->
                     Text(
                         text = " · $date",
                         style = MaterialTheme.typography.labelSmall,
@@ -152,7 +152,7 @@ private fun NewsItem(item: RssItem) {
                 horizontalArrangement = Arrangement.spacedBy(FocusSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                item.pubDate?.let { date ->
+                relativeTimeLabel(item.pubDateMillis, item.pubDate)?.let { date ->
                     Text(
                         text = date,
                         style = MaterialTheme.typography.labelSmall,

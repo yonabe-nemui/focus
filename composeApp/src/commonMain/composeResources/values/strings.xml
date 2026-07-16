@@ -26,6 +26,14 @@
     <string name="error_prefix">Error: %1$s</string>
     <string name="hatena_user_count">%1$d users</string>
 
+    <!-- 相対時刻 -->
+    <string name="time_just_now">たった今</string>
+    <string name="time_minutes_ago">%1$d分前</string>
+    <string name="time_hours_ago">%1$d時間前</string>
+    <string name="time_days_ago">%1$d日前</string>
+    <string name="time_date">%1$d月%2$d日</string>
+    <string name="time_date_with_year">%1$d年%2$d月%3$d日</string>
+
     <!-- 設定 -->
     <string name="settings_mute_words_summary">すべてのソースで除外するワードを設定</string>
 
