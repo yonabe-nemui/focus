@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val viewModel = remember {
                 val database = FocusDatabase(DriverFactory(this@MainActivity).createDriver())
-                createRssViewModel(
+                createFeedViewModel(
                     scope = scope,
                     database = database,
                     engine = OkHttp,

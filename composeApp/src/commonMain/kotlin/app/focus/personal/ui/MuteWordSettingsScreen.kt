@@ -33,7 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.focus.personal.ui.components.SectionDivider
 import app.focus.personal.ui.theme.FocusSpacing
-import app.focus.personal.viewmodel.RssViewModel
+import app.focus.personal.viewmodel.FeedViewModel
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.cd_back
 import focus.composeapp.generated.resources.cd_delete
@@ -47,7 +47,7 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MuteWordSettingsScreen(
-    viewModel: RssViewModel,
+    viewModel: FeedViewModel,
     onBack: () -> Unit,
 ) {
     val muteWords by viewModel.muteWords.collectAsState()

@@ -51,8 +51,14 @@ data class RssItem(
     val imageUrls: List<String>? = null,
     val imageFullUrls: List<String>? = null,
     // 各クライアントが pubDate をパースして正規化した値を入れる。0 = パース失敗・未設定。
-    val pubDateMillis: Long = 0L
+    val pubDateMillis: Long = 0L,
+    // XML(RSS)には存在しないため、パース時はデフォルトの NEWS になる。
+    val kind: ItemKind = ItemKind.NEWS,
 )
+
+/** アイテムの種別。UI の詳細画面遷移や表示レイアウトの分岐に使う。 */
+@Serializable
+enum class ItemKind { NEWS, SNS_POST }
 
 @Serializable
 data class PagedFeedResponse(val items: List<RssItem>, val nextCursor: String? = null)

@@ -40,7 +40,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.theme.FocusSpacing
-import app.focus.personal.viewmodel.RssUiState
+import app.focus.personal.viewmodel.FeedUiState
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.bluesky_2fa_description
 import focus.composeapp.generated.resources.bluesky_2fa_label
@@ -59,7 +59,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun BlueskyLoginScreen(
     is2faRequired: Boolean,
-    uiState: RssUiState,
+    uiState: FeedUiState,
     onLogin: (String, String, String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -69,7 +69,7 @@ fun BlueskyLoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
 
     val clipboardManager = LocalClipboardManager.current
-    val isLoading = uiState is RssUiState.Loading
+    val isLoading = uiState is FeedUiState.Loading
     val autofillTree = LocalAutofillTree.current
 
     Column(
@@ -93,7 +93,7 @@ fun BlueskyLoginScreen(
                 .padding(bottom = FocusSpacing.xl),
         )
 
-        if (uiState is RssUiState.Error) {
+        if (uiState is FeedUiState.Error) {
             val errorMessage = feedErrorMessage(uiState)
             SelectionContainer {
                 Text(

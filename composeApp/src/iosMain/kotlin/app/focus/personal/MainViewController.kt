@@ -16,7 +16,7 @@ fun MainViewController() = ComposeUIViewController {
     val scope = rememberCoroutineScope()
     val viewModel = remember {
         val database = FocusDatabase(DriverFactory().createDriver())
-        createRssViewModel(scope = scope, database = database, engine = Darwin)
+        createFeedViewModel(scope = scope, database = database, engine = Darwin)
     }
 
     App(

@@ -30,7 +30,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.theme.FocusSpacing
-import app.focus.personal.viewmodel.RssUiState
+import app.focus.personal.viewmodel.FeedUiState
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.misskey_api_token_label
 import focus.composeapp.generated.resources.misskey_connect_button
@@ -41,14 +41,14 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MisskeySettingsScreen(
-    uiState: RssUiState,
+    uiState: FeedUiState,
     onSave: (String, String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var instanceUrl by remember { mutableStateOf("misskey.io") }
     var apiToken by remember { mutableStateOf("") }
     var tokenVisible by remember { mutableStateOf(false) }
-    val isLoading = uiState is RssUiState.Loading
+    val isLoading = uiState is FeedUiState.Loading
 
     Column(
         modifier = modifier
@@ -71,7 +71,7 @@ fun MisskeySettingsScreen(
                 .padding(bottom = FocusSpacing.xl),
         )
 
-        if (uiState is RssUiState.Error) {
+        if (uiState is FeedUiState.Error) {
             Text(
                 text = feedErrorMessage(uiState),
                 color = MaterialTheme.colorScheme.error,

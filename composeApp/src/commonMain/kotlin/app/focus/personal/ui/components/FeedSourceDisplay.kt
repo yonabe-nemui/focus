@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.RssFeed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
-import app.focus.personal.viewmodel.RssSource
+import app.focus.personal.viewmodel.FeedSource
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.source_bluesky
 import focus.composeapp.generated.resources.source_google
@@ -17,18 +17,18 @@ import org.jetbrains.compose.resources.stringResource
 
 /** ソースの表示名。 */
 @Composable
-fun sourceDisplayName(source: RssSource): String = when (source) {
-    RssSource.GOOGLE -> stringResource(Res.string.source_google)
-    RssSource.HATENA -> stringResource(Res.string.source_hatena)
-    RssSource.BLUESKY -> stringResource(Res.string.source_bluesky)
-    RssSource.MISSKEY -> stringResource(Res.string.source_misskey)
+fun sourceDisplayName(source: FeedSource): String = when (source) {
+    FeedSource.GOOGLE -> stringResource(Res.string.source_google)
+    FeedSource.HATENA -> stringResource(Res.string.source_hatena)
+    FeedSource.BLUESKY -> stringResource(Res.string.source_bluesky)
+    FeedSource.MISSKEY -> stringResource(Res.string.source_misskey)
 }
 
 /** ソースのアイコン。 */
-val RssSource.icon: ImageVector
+val FeedSource.icon: ImageVector
     get() = when (this) {
-        RssSource.GOOGLE -> Icons.Default.RssFeed
-        RssSource.HATENA -> Icons.Default.Bookmark
-        RssSource.BLUESKY -> Icons.Default.Cloud
-        RssSource.MISSKEY -> Icons.AutoMirrored.Filled.Message
+        FeedSource.GOOGLE -> Icons.Default.RssFeed
+        FeedSource.HATENA -> Icons.Default.Bookmark
+        FeedSource.BLUESKY -> Icons.Default.Cloud
+        FeedSource.MISSKEY -> Icons.AutoMirrored.Filled.Message
     }

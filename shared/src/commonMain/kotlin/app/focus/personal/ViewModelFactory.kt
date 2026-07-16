@@ -9,7 +9,7 @@ import app.focus.personal.network.MisskeyClient
 import app.focus.personal.repository.FeedRepository
 import app.focus.personal.repository.RssRepository
 import app.focus.personal.repository.ServerRssRepository
-import app.focus.personal.viewmodel.RssViewModel
+import app.focus.personal.viewmodel.FeedViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -26,12 +26,12 @@ import kotlinx.serialization.json.Json
  * @param serverBaseUrl 指定すると自前 Ktor サーバー経由の ServerRssRepository を使う(Android)。
  *   null なら各ソースへ直接アクセスする RssRepository を使う。
  */
-fun createRssViewModel(
+fun createFeedViewModel(
     scope: CoroutineScope,
     database: FocusDatabase? = null,
     engine: HttpClientEngineFactory<*>? = null,
     serverBaseUrl: String? = null,
-): RssViewModel {
+): FeedViewModel {
     val client = createHttpClient(engine)
     val repository: FeedRepository = if (serverBaseUrl != null) {
         ServerRssRepository(
@@ -48,7 +48,7 @@ fun createRssViewModel(
             misskeyApi = MisskeyClient(client),
         )
     }
-    return RssViewModel(repository, scope)
+    return FeedViewModel(repository, scope)
 }
 
 private fun createHttpClient(engine: HttpClientEngineFactory<*>?): HttpClient =

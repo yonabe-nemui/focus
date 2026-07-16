@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.focus.personal.LocalAppImageLoader
+import app.focus.personal.model.ItemKind
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.theme.FocusShape
 import app.focus.personal.ui.theme.FocusSpacing
@@ -35,8 +36,8 @@ import org.jetbrains.compose.resources.stringResource
  * フィードの1アイテム。Card・elevation を使わずフラットなレイアウト。
  * 下端に SectionDivider を内包し、LazyColumn 側での追加処理が不要。
  *
- * - SNS 投稿（authorName あり）: 左アバター + 右コンテンツ（Twitter 形式）
- * - ニュース/RSS（authorName なし）: タイトル + 説明 + 画像 + メタ情報
+ * - SNS 投稿（kind = SNS_POST）: 左アバター + 右コンテンツ（Twitter 形式）
+ * - ニュース/RSS（kind = NEWS）: タイトル + 説明 + 画像 + メタ情報
  */
 @Composable
 fun FeedItem(
@@ -49,7 +50,7 @@ fun FeedItem(
             .fillMaxWidth()
             .clickable { onClick(item) },
     ) {
-        if (item.authorName != null) {
+        if (item.kind == ItemKind.SNS_POST) {
             SnsPostItem(item = item)
         } else {
             NewsItem(item = item)

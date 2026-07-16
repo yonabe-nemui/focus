@@ -49,9 +49,9 @@ import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.components.icon
 import app.focus.personal.ui.components.sourceDisplayName
 import app.focus.personal.ui.theme.FocusSpacing
-import app.focus.personal.viewmodel.RssSource
-import app.focus.personal.viewmodel.RssUiState
-import app.focus.personal.viewmodel.RssViewModel
+import app.focus.personal.viewmodel.FeedSource
+import app.focus.personal.viewmodel.FeedUiState
+import app.focus.personal.viewmodel.FeedViewModel
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.app_name
 import focus.composeapp.generated.resources.cd_clear
@@ -62,8 +62,8 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DesktopRssScreen(
-    viewModel: RssViewModel,
+fun DesktopFeedScreen(
+    viewModel: FeedViewModel,
     onItemClick: (RssItem) -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
@@ -94,7 +94,7 @@ fun DesktopRssScreen(
                 .padding(padding),
         ) {
             val minColumnWidth = 280.dp
-            val sourceCount = RssSource.entries.size
+            val sourceCount = FeedSource.entries.size
             val fitsAll = maxWidth >= minColumnWidth * sourceCount
             val columnWidth = if (fitsAll) maxWidth / sourceCount else minColumnWidth
 
@@ -102,10 +102,10 @@ fun DesktopRssScreen(
             else Modifier.fillMaxSize().horizontalScroll(rememberScrollState())
 
             Row(modifier = rowModifier) {
-                RssSource.entries.forEachIndexed { index, source ->
+                FeedSource.entries.forEachIndexed { index, source ->
                     FeedColumn(
                         source = source,
-                        uiState = columnStates[source] ?: RssUiState.Loading,
+                        uiState = columnStates[source] ?: FeedUiState.Loading,
                         loginUiState = uiState,
                         blueskySession = blueskySession,
                         is2faRequired = is2faRequired,
@@ -130,9 +130,9 @@ fun DesktopRssScreen(
 
 @Composable
 private fun FeedColumn(
-    source: RssSource,
-    uiState: RssUiState,
-    loginUiState: RssUiState,
+    source: FeedSource,
+    uiState: FeedUiState,
+    loginUiState: FeedUiState,
     blueskySession: BlueskySession?,
     is2faRequired: Boolean,
     misskeySettings: MisskeySettings?,
@@ -145,10 +145,10 @@ private fun FeedColumn(
     onSearch: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val hasSearch = source == RssSource.BLUESKY || source == RssSource.MISSKEY
-    val needsAuth = (source == RssSource.BLUESKY && blueskySession == null) ||
-                    (source == RssSource.MISSKEY && misskeySettings == null)
-    val isLoading = uiState is RssUiState.Loading
+    val hasSearch = source == FeedSource.BLUESKY || source == FeedSource.MISSKEY
+    val needsAuth = (source == FeedSource.BLUESKY && blueskySession == null) ||
+                    (source == FeedSource.MISSKEY && misskeySettings == null)
+    val isLoading = uiState is FeedUiState.Loading
 
     Column(modifier = modifier) {
         // カラムヘッダー（フラット、elevation なし）
@@ -220,13 +220,13 @@ private fun FeedColumn(
         SectionDivider()
 
         when {
-            source == RssSource.BLUESKY && blueskySession == null ->
+            source == FeedSource.BLUESKY && blueskySession == null ->
                 BlueskyLoginScreen(
                     is2faRequired = is2faRequired,
                     uiState = loginUiState,
                     onLogin = onLogin,
                 )
-            source == RssSource.MISSKEY && misskeySettings == null ->
+            source == FeedSource.MISSKEY && misskeySettings == null ->
                 MisskeySettingsScreen(
                     uiState = loginUiState,
                     onSave = onSaveMisskey,
@@ -238,24 +238,24 @@ private fun FeedColumn(
 
 @Composable
 private fun ColumnFeedList(
-    uiState: RssUiState,
+    uiState: FeedUiState,
     onItemClick: (RssItem) -> Unit,
 ) {
     when (uiState) {
-        is RssUiState.Loading -> Box(
+        is FeedUiState.Loading -> Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator()
         }
-        is RssUiState.Success -> LazyColumn(
+        is FeedUiState.Success -> LazyColumn(
             modifier = Modifier.fillMaxSize(),
         ) {
             items(uiState.items) { item ->
                 FeedItem(item = item, onClick = onItemClick)
             }
         }
-        is RssUiState.Error -> Box(
+        is FeedUiState.Error -> Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(FocusSpacing.lg),

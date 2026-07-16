@@ -2,7 +2,7 @@ package app.focus.personal.ui.components
 
 import androidx.compose.runtime.Composable
 import app.focus.personal.viewmodel.FeedErrorKind
-import app.focus.personal.viewmodel.RssUiState
+import app.focus.personal.viewmodel.FeedUiState
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.bluesky_auth_code_invalid_error
 import focus.composeapp.generated.resources.bluesky_login_failed_error
@@ -16,7 +16,7 @@ import org.jetbrains.compose.resources.stringResource
  * 例外由来の詳細メッセージがあれば文言に併記する。
  */
 @Composable
-fun feedErrorMessage(state: RssUiState.Error): String {
+fun feedErrorMessage(state: FeedUiState.Error): String {
     val base = when (state.kind) {
         FeedErrorKind.RATE_LIMITED -> stringResource(Res.string.bluesky_rate_limit_error)
         FeedErrorKind.AUTH_CODE_INVALID -> stringResource(Res.string.bluesky_auth_code_invalid_error)

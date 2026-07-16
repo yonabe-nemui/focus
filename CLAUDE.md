@@ -59,7 +59,7 @@ iOS: `iosApp/` を Xcode で開く。
 - `androidApp/` — Android エントリーポイント（DI セットアップ・OkHttp HttpClient 初期化）
 - `server/` — Ktor Netty サーバー（ポート 8080）
 
-**データフロー:** `UI (composeApp)` → `RssViewModel (shared)` → `FeedRepository (shared, interface)` → ネットワーククライアント + SQLDelight DB
+**データフロー:** `UI (composeApp)` → `FeedViewModel (shared)` → `FeedRepository (shared, interface)` → ネットワーククライアント + SQLDelight DB
 
 `FeedRepository` の実装は2つあり、プラットフォームで使い分ける:
 - `RssRepository` — 各ソースへ直接アクセス（iOS・Desktop・Web で使用）

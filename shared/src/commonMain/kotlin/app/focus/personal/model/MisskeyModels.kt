@@ -60,6 +60,7 @@ fun MisskeyNote.toRssItem(instanceUrl: String): RssItem {
         authorAvatarUrl = user.avatarUrl,
         imageUrls = imageUrls,
         imageFullUrls = imageFullUrls,
-        pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(createdAt)
+        pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(createdAt),
+        kind = ItemKind.SNS_POST,
     )
 }

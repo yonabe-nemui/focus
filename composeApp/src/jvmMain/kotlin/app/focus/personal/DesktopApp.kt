@@ -10,19 +10,20 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import app.focus.personal.ui.DesktopRssScreen
+import app.focus.personal.model.ItemKind
+import app.focus.personal.ui.DesktopFeedScreen
 import app.focus.personal.ui.theme.FocusTheme
 import app.focus.personal.ui.MuteWordSettingsScreen
 import app.focus.personal.ui.PostDetailScreen
 import app.focus.personal.ui.SettingsScreen
-import app.focus.personal.viewmodel.RssViewModel
+import app.focus.personal.viewmodel.FeedViewModel
 import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 
 @Composable
 fun DesktopApp(
-    viewModel: RssViewModel,
+    viewModel: FeedViewModel,
     onLinkClick: (String) -> Unit
 ) {
     val backStack = remember { mutableStateListOf<Screen>(Screen.List) }
@@ -41,10 +42,10 @@ fun DesktopApp(
     CompositionLocalProvider(LocalAppImageLoader provides imageLoader) {
         FocusTheme {
             when (val screen = currentScreen) {
-                is Screen.List -> DesktopRssScreen(
+                is Screen.List -> DesktopFeedScreen(
                     viewModel = viewModel,
                     onItemClick = { item ->
-                        if (item.authorName != null) navigateTo(Screen.PostDetail(item))
+                        if (item.kind == ItemKind.SNS_POST) navigateTo(Screen.PostDetail(item))
                         else onLinkClick(item.link)
                     },
                     onNavigateToSettings = { navigateTo(Screen.Settings) }

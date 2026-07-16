@@ -41,9 +41,9 @@ import app.focus.personal.ui.components.FeedItem
 import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.components.sourceDisplayName
 import app.focus.personal.ui.theme.FocusSpacing
-import app.focus.personal.viewmodel.RssSource
-import app.focus.personal.viewmodel.RssUiState
-import app.focus.personal.viewmodel.RssViewModel
+import app.focus.personal.viewmodel.FeedSource
+import app.focus.personal.viewmodel.FeedUiState
+import app.focus.personal.viewmodel.FeedViewModel
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.cd_clear
 import focus.composeapp.generated.resources.cd_settings
@@ -53,8 +53,8 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RssListScreen(
-    viewModel: RssViewModel,
+fun FeedListScreen(
+    viewModel: FeedViewModel,
     onItemClick: (RssItem) -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
@@ -79,7 +79,7 @@ fun RssListScreen(
                     },
                 )
                 PrimaryTabRow(selectedTabIndex = currentSource.ordinal) {
-                    RssSource.entries.forEach { source ->
+                    FeedSource.entries.forEach { source ->
                         Tab(
                             selected = currentSource == source,
                             onClick = { viewModel.setSource(source) },
@@ -90,14 +90,14 @@ fun RssListScreen(
             }
         },
     ) { paddingValues ->
-        if (currentSource == RssSource.BLUESKY && blueskySession == null) {
+        if (currentSource == FeedSource.BLUESKY && blueskySession == null) {
             BlueskyLoginScreen(
                 is2faRequired = is2faRequired,
                 uiState = uiState,
                 onLogin = { handle, password, code -> viewModel.loginBluesky(handle, password, code) },
                 modifier = Modifier.padding(paddingValues),
             )
-        } else if (currentSource == RssSource.MISSKEY && misskeySettings == null) {
+        } else if (currentSource == FeedSource.MISSKEY && misskeySettings == null) {
             MisskeySettingsScreen(
                 uiState = uiState,
                 onSave = { instanceUrl, token -> viewModel.saveMisskeySettings(instanceUrl, token) },
@@ -109,7 +109,7 @@ fun RssListScreen(
                     .fillMaxSize()
                     .padding(paddingValues),
             ) {
-                if (currentSource == RssSource.BLUESKY || currentSource == RssSource.MISSKEY) {
+                if (currentSource == FeedSource.BLUESKY || currentSource == FeedSource.MISSKEY) {
                     val query = searchQueries[currentSource].orEmpty()
 
                     OutlinedTextField(
@@ -138,12 +138,12 @@ fun RssListScreen(
                     modifier = Modifier.weight(1f),
                 ) {
                     when (val state = uiState) {
-                        is RssUiState.Loading -> {
+                        is FeedUiState.Loading -> {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator()
                             }
                         }
-                        is RssUiState.Success -> {
+                        is FeedUiState.Success -> {
                             val lazyListState = rememberLazyListState()
                             val shouldLoadMore by remember {
                                 derivedStateOf {
@@ -177,7 +177,7 @@ fun RssListScreen(
                                 }
                             }
                         }
-                        is RssUiState.Error -> {
+                        is FeedUiState.Error -> {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
                                     text = feedErrorMessage(state),

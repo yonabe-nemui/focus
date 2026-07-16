@@ -12,7 +12,7 @@ fun main() {
         val scope = rememberCoroutineScope()
         val viewModel = remember {
             // Web では WebWorkerDriver が非同期のため DB は使用しない（セッションはメモリのみ保持）
-            createRssViewModel(scope = scope)
+            createFeedViewModel(scope = scope)
         }
 
         App(

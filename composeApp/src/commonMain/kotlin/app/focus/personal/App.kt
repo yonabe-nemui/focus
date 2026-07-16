@@ -6,15 +6,16 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
+import app.focus.personal.model.ItemKind
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.BindBackHandler
 import app.focus.personal.ui.MuteWordSettingsScreen
 import app.focus.personal.ui.theme.FocusTheme
 import app.focus.personal.ui.PostDetailScreen
-import app.focus.personal.ui.RssListScreen
+import app.focus.personal.ui.FeedListScreen
 import app.focus.personal.ui.SettingsScreen
 import app.focus.personal.ui.WebViewScreen
-import app.focus.personal.viewmodel.RssViewModel
+import app.focus.personal.viewmodel.FeedViewModel
 import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.network.ktor3.KtorNetworkFetcherFactory
@@ -32,7 +33,7 @@ sealed class Screen {
 @Composable
 @Preview
 fun App(
-    viewModel: RssViewModel,
+    viewModel: FeedViewModel,
     onLinkClick: (String) -> Unit
 ) {
     val backStack = remember { mutableStateListOf<Screen>(Screen.List) }
@@ -56,10 +57,10 @@ fun App(
         FocusTheme {
             when (val screen = currentScreen) {
                 is Screen.List -> {
-                    RssListScreen(
+                    FeedListScreen(
                         viewModel = viewModel,
                         onItemClick = { item ->
-                            if (item.authorName != null) {
+                            if (item.kind == ItemKind.SNS_POST) {
                                 navigateTo(Screen.PostDetail(item))
                             } else {
                                 navigateTo(Screen.WebView(item.link))
