@@ -18,8 +18,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -44,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.RssItem
+import app.focus.personal.ui.components.EmptyState
+import app.focus.personal.ui.components.ErrorState
 import app.focus.personal.ui.components.FeedItem
 import app.focus.personal.ui.components.FeedListSkeleton
 import app.focus.personal.ui.components.SectionDivider
@@ -59,6 +63,8 @@ import focus.composeapp.generated.resources.app_name
 import focus.composeapp.generated.resources.cd_clear
 import focus.composeapp.generated.resources.cd_refresh
 import focus.composeapp.generated.resources.cd_settings
+import focus.composeapp.generated.resources.empty_feed
+import focus.composeapp.generated.resources.empty_search_results
 import focus.composeapp.generated.resources.search_placeholder
 import org.jetbrains.compose.resources.stringResource
 
@@ -231,7 +237,12 @@ private fun FeedColumn(
                     uiState = loginUiState,
                     onSave = onSaveMisskey,
                 )
-            else -> ColumnFeedList(uiState = uiState, onItemClick = onItemClick)
+            else -> ColumnFeedList(
+                uiState = uiState,
+                onItemClick = onItemClick,
+                isSearching = searchQuery.isNotBlank(),
+                onRetry = onRefresh,
+            )
         }
     }
 }
@@ -240,27 +251,32 @@ private fun FeedColumn(
 private fun ColumnFeedList(
     uiState: FeedUiState,
     onItemClick: (RssItem) -> Unit,
+    isSearching: Boolean,
+    onRetry: () -> Unit,
 ) {
     when (uiState) {
         is FeedUiState.Loading -> FeedListSkeleton(modifier = Modifier.fillMaxSize())
-        is FeedUiState.Success -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(uiState.items) { item ->
-                FeedItem(item = item, onClick = onItemClick)
+        is FeedUiState.Success -> {
+            if (uiState.items.isEmpty()) {
+                EmptyState(
+                    icon = if (isSearching) Icons.Default.SearchOff else Icons.Default.Inbox,
+                    message = stringResource(
+                        if (isSearching) Res.string.empty_search_results else Res.string.empty_feed
+                    ),
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(uiState.items) { item ->
+                        FeedItem(item = item, onClick = onItemClick)
+                    }
+                }
             }
         }
-        is FeedUiState.Error -> Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(FocusSpacing.lg),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = feedErrorMessage(uiState),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
+        is FeedUiState.Error -> ErrorState(
+            message = feedErrorMessage(uiState),
+            onRetry = onRetry,
+        )
     }
 }

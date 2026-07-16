@@ -13,7 +13,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -40,6 +42,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import app.focus.personal.model.RssItem
+import app.focus.personal.ui.components.EmptyState
+import app.focus.personal.ui.components.ErrorState
 import app.focus.personal.ui.components.FeedItem
 import app.focus.personal.ui.components.FeedListSkeleton
 import app.focus.personal.ui.components.feedErrorMessage
@@ -51,6 +55,8 @@ import app.focus.personal.viewmodel.FeedViewModel
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.cd_clear
 import focus.composeapp.generated.resources.cd_settings
+import focus.composeapp.generated.resources.empty_feed
+import focus.composeapp.generated.resources.empty_search_results
 import focus.composeapp.generated.resources.screen_title_feed
 import focus.composeapp.generated.resources.search_placeholder
 import org.jetbrains.compose.resources.stringResource
@@ -155,6 +161,16 @@ fun FeedListScreen(
                             FeedListSkeleton(modifier = Modifier.fillMaxSize())
                         }
                         is FeedUiState.Success -> {
+                            if (state.items.isEmpty()) {
+                                val isSearching = searchQueries[currentSource].orEmpty().isNotBlank()
+                                EmptyState(
+                                    icon = if (isSearching) Icons.Default.SearchOff else Icons.Default.Inbox,
+                                    message = stringResource(
+                                        if (isSearching) Res.string.empty_search_results else Res.string.empty_feed
+                                    ),
+                                )
+                                return@PullToRefreshBox
+                            }
                             val lazyListState = rememberLazyListState()
                             val shouldLoadMore by remember {
                                 derivedStateOf {
@@ -189,12 +205,10 @@ fun FeedListScreen(
                             }
                         }
                         is FeedUiState.Error -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = feedErrorMessage(state),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-                            }
+                            ErrorState(
+                                message = feedErrorMessage(state),
+                                onRetry = { viewModel.loadCurrentSource() },
+                            )
                         }
                     }
                 }

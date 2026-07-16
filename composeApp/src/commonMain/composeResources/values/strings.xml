@@ -25,6 +25,9 @@
     <string name="search_placeholder">検索...</string>
     <string name="error_generic">読み込みに失敗しました。</string>
     <string name="error_detail_suffix">%1$s（%2$s）</string>
+    <string name="error_retry_button">再試行</string>
+    <string name="empty_search_results">検索結果がありません</string>
+    <string name="empty_feed">表示できる記事がありません</string>
     <string name="hatena_user_count">%1$d users</string>
 
     <!-- 相対時刻 -->
