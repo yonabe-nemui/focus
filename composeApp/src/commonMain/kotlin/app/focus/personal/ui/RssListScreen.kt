@@ -32,9 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -70,9 +68,7 @@ fun RssListScreen(
     val blueskySession by viewModel.blueskySession.collectAsState()
     val is2faRequired by viewModel.is2faRequired.collectAsState()
     val misskeySettings by viewModel.misskeySettings.collectAsState()
-
-    var localBlueskyQuery by remember { mutableStateOf("") }
-    var localMisskeyQuery by remember { mutableStateOf("") }
+    val searchQueries by viewModel.searchQueries.collectAsState()
 
     Scaffold(
         topBar = {
@@ -130,19 +126,16 @@ fun RssListScreen(
                     .padding(paddingValues),
             ) {
                 if (currentSource == RssSource.BLUESKY || currentSource == RssSource.MISSKEY) {
-                    val localQuery = if (currentSource == RssSource.BLUESKY) localBlueskyQuery else localMisskeyQuery
-                    val onQueryChange: (String) -> Unit =
-                        if (currentSource == RssSource.BLUESKY) { q -> localBlueskyQuery = q }
-                        else { q -> localMisskeyQuery = q }
+                    val query = searchQueries[currentSource].orEmpty()
 
                     OutlinedTextField(
-                        value = localQuery,
-                        onValueChange = onQueryChange,
+                        value = query,
+                        onValueChange = { viewModel.setSearchQuery(currentSource, it.replace("\n", "")) },
                         placeholder = { Text(stringResource(Res.string.search_placeholder)) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         trailingIcon = {
-                            if (localQuery.isNotEmpty()) {
-                                IconButton(onClick = { onQueryChange(""); viewModel.searchFeed("") }) {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.searchFeed("") }) {
                                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.cd_clear))
                                 }
                             }
@@ -152,7 +145,7 @@ fun RssListScreen(
                             .padding(horizontal = FocusSpacing.sm, vertical = FocusSpacing.xs),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { viewModel.searchFeed(localQuery) }),
+                        keyboardActions = KeyboardActions(onSearch = { viewModel.searchFeed(query) }),
                     )
                 }
                 PullToRefreshBox(

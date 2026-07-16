@@ -40,9 +40,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -97,6 +94,7 @@ fun DesktopRssScreen(
     val is2faRequired by viewModel.is2faRequired.collectAsState()
     val misskeySettings by viewModel.misskeySettings.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val searchQueries by viewModel.searchQueries.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.loadAllSourcesParallel() }
 
@@ -138,6 +136,8 @@ fun DesktopRssScreen(
                         onRefresh = { viewModel.refreshColumn(source) },
                         onLogin = { handle, password, code -> viewModel.loginBluesky(handle, password, code) },
                         onSaveMisskey = { url, token -> viewModel.saveMisskeySettings(url, token) },
+                        searchQuery = searchQueries[source].orEmpty(),
+                        onQueryChange = { query -> viewModel.setSearchQuery(source, query) },
                         onSearch = { query -> viewModel.searchColumnFeed(source, query) },
                         modifier = Modifier
                             .width(columnWidth)
@@ -162,6 +162,8 @@ private fun FeedColumn(
     onRefresh: () -> Unit,
     onLogin: (String, String, String?) -> Unit,
     onSaveMisskey: (String, String?) -> Unit,
+    searchQuery: String,
+    onQueryChange: (String) -> Unit,
     onSearch: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -169,7 +171,6 @@ private fun FeedColumn(
     val needsAuth = (source == RssSource.BLUESKY && blueskySession == null) ||
                     (source == RssSource.MISSKEY && misskeySettings == null)
     val isLoading = uiState is RssUiState.Loading
-    var localSearchQuery by remember { mutableStateOf("") }
 
     Column(modifier = modifier) {
         // カラムヘッダー（フラット、elevation なし）
@@ -212,15 +213,15 @@ private fun FeedColumn(
                 }
                 if (hasSearch && !needsAuth) {
                     OutlinedTextField(
-                        value = localSearchQuery,
-                        onValueChange = { localSearchQuery = it.replace("\n", "") },
+                        value = searchQuery,
+                        onValueChange = { onQueryChange(it.replace("\n", "")) },
                         placeholder = { Text(stringResource(Res.string.search_placeholder), style = MaterialTheme.typography.bodySmall) },
                         leadingIcon = {
                             Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                         },
                         trailingIcon = {
-                            if (localSearchQuery.isNotEmpty()) {
-                                IconButton(onClick = { localSearchQuery = ""; onSearch("") }) {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { onSearch("") }) {
                                     Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.cd_clear), modifier = Modifier.size(16.dp))
                                 }
                             }
@@ -232,7 +233,7 @@ private fun FeedColumn(
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodySmall,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { onSearch(localSearchQuery) }),
+                        keyboardActions = KeyboardActions(onSearch = { onSearch(searchQuery) }),
                     )
                 }
             }

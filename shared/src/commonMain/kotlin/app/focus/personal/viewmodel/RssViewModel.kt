@@ -68,13 +68,15 @@ class RssViewModel(
     )
     val columnStates: StateFlow<Map<RssSource, RssUiState>> = _columnStates.asStateFlow()
 
-    // ソース別の内部状態（items, ページネーション cursor/untilId, 検索クエリ）
+    // ソース別の内部状態（items, ページネーション cursor/untilId）
     private val cachedItems: MutableMap<RssSource, List<RssItem>> =
         RssSource.entries.associateWith<RssSource, List<RssItem>> { emptyList() }.toMutableMap()
     private val paginationCursor: MutableMap<RssSource, String?> =
         RssSource.entries.associateWith<RssSource, String?> { null }.toMutableMap()
-    private val searchQueries: MutableMap<RssSource, String> =
-        RssSource.entries.associateWith { "" }.toMutableMap()
+
+    // 検索クエリ。入力欄の表示値も ViewModel を single source of truth とする。
+    private val _searchQueries = MutableStateFlow(RssSource.entries.associateWith { "" })
+    val searchQueries: StateFlow<Map<RssSource, String>> = _searchQueries.asStateFlow()
 
     // モバイル単一カラムの進行中 fetch Job。タブ高速切り替え時の race を防ぐ。
     private var currentLoadJob: Job? = null
@@ -211,7 +213,7 @@ class RssViewModel(
             if (settings == null) {
                 emptyList()
             } else {
-                val items = repository.fetchMisskeyEntries(searchQueries[RssSource.MISSKEY].orEmpty(), settings)
+                val items = repository.fetchMisskeyEntries(queryOf(RssSource.MISSKEY), settings)
                 paginationCursor[RssSource.MISSKEY] = items.lastOrNull()?.guid
                 items
             }
@@ -238,7 +240,7 @@ class RssViewModel(
                     RssSource.MISSKEY -> {
                         val untilId = paginationCursor[source] ?: return@launch
                         val settings = _misskeySettings.value ?: return@launch
-                        newItems = repository.fetchMisskeyPage(searchQueries[source].orEmpty(), settings, untilId)
+                        newItems = repository.fetchMisskeyPage(queryOf(source), settings, untilId)
                         nextCursor = newItems.lastOrNull()?.guid
                     }
                     RssSource.GOOGLE, RssSource.HATENA -> return@launch
@@ -267,7 +269,7 @@ class RssViewModel(
             Napier.w("BlueSky: no session, skipping fetch")
             return PagedFeedResponse(emptyList())
         }
-        val query = searchQueries[RssSource.BLUESKY].orEmpty()
+        val query = queryOf(RssSource.BLUESKY)
         Napier.d("BlueSky: fetching page query='$query' cursor=$cursor")
         return try {
             val result = repository.fetchBlueskyPage(query = query, session = session, cursor = cursor)
@@ -289,10 +291,17 @@ class RssViewModel(
         }
     }
 
+    private fun queryOf(source: RssSource): String = _searchQueries.value[source].orEmpty()
+
+    /** 入力欄の値を更新する(検索は実行しない)。 */
+    fun setSearchQuery(source: RssSource, query: String) {
+        _searchQueries.value = _searchQueries.value + (source to query)
+    }
+
     fun searchFeed(query: String) {
         val source = _currentSource.value
         if (source != RssSource.BLUESKY && source != RssSource.MISSKEY) return
-        searchQueries[source] = query
+        setSearchQuery(source, query)
         resetSourceCache(source)
         loadAllTopics()
     }
@@ -347,7 +356,7 @@ class RssViewModel(
 
     fun searchColumnFeed(source: RssSource, query: String) {
         if (source != RssSource.BLUESKY && source != RssSource.MISSKEY) return
-        searchQueries[source] = query
+        setSearchQuery(source, query)
         resetSourceCache(source)
         loadColumn(source)
     }
