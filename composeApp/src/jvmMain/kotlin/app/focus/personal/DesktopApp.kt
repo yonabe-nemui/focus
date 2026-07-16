@@ -12,7 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.focus.personal.model.ItemKind
-import app.focus.personal.ui.DesktopFeedScreen
+import app.focus.personal.ui.MultiColumnFeedScreen
 import app.focus.personal.ui.theme.FocusTheme
 import app.focus.personal.ui.MuteWordSettingsScreen
 import app.focus.personal.ui.PostDetailScreen
@@ -44,7 +44,7 @@ fun DesktopApp(
     CompositionLocalProvider(LocalAppImageLoader provides imageLoader) {
         FocusTheme {
             when (val screen = currentScreen) {
-                is Screen.List -> DesktopFeedScreen(
+                is Screen.List -> MultiColumnFeedScreen(
                     viewModel = viewModel,
                     onOpenInBrowser = onLinkClick,
                     onItemClick = { item ->

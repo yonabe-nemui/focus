@@ -73,7 +73,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DesktopFeedScreen(
+fun MultiColumnFeedScreen(
     viewModel: FeedViewModel,
     onItemClick: (RssItem) -> Unit,
     onNavigateToSettings: () -> Unit,
