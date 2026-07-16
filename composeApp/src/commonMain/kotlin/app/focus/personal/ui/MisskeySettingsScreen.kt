@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssUiState
 import focus.composeapp.generated.resources.Res
@@ -72,7 +73,7 @@ fun MisskeySettingsScreen(
 
         if (uiState is RssUiState.Error) {
             Text(
-                text = uiState.message,
+                text = feedErrorMessage(uiState),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier

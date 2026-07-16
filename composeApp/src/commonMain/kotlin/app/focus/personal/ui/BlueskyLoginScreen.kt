@@ -38,13 +38,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.theme.FocusSpacing
-import app.focus.personal.viewmodel.FeedErrorKind
 import app.focus.personal.viewmodel.RssUiState
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.bluesky_2fa_description
 import focus.composeapp.generated.resources.bluesky_2fa_label
-import focus.composeapp.generated.resources.bluesky_auth_code_invalid_error
 import focus.composeapp.generated.resources.bluesky_cd_hide_password
 import focus.composeapp.generated.resources.bluesky_cd_show_password
 import focus.composeapp.generated.resources.bluesky_handle_label
@@ -95,11 +94,7 @@ fun BlueskyLoginScreen(
         )
 
         if (uiState is RssUiState.Error) {
-            val errorMessage = when (uiState.kind) {
-                FeedErrorKind.RATE_LIMITED -> stringResource(Res.string.bluesky_rate_limit_error)
-                FeedErrorKind.AUTH_CODE_INVALID -> stringResource(Res.string.bluesky_auth_code_invalid_error)
-                FeedErrorKind.GENERIC -> uiState.message
-            }
+            val errorMessage = feedErrorMessage(uiState)
             SelectionContainer {
                 Text(
                     text = errorMessage,

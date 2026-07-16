@@ -50,6 +50,7 @@ import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.FeedItem
 import app.focus.personal.ui.components.SectionDivider
+import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
@@ -284,7 +285,7 @@ private fun ColumnFeedList(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = uiState.message,
+                text = feedErrorMessage(uiState),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )

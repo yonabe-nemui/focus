@@ -23,7 +23,8 @@
 
     <!-- フィード -->
     <string name="search_placeholder">検索...</string>
-    <string name="error_prefix">Error: %1$s</string>
+    <string name="error_generic">読み込みに失敗しました。</string>
+    <string name="error_detail_suffix">%1$s（%2$s）</string>
     <string name="hatena_user_count">%1$d users</string>
 
     <!-- 相対時刻 -->
@@ -46,6 +47,7 @@
     <!-- BlueSky ログイン -->
     <string name="bluesky_login_title">BlueSky Login</string>
     <string name="bluesky_login_description">「見たくないものは見ない」設定（ミュートワード等）を反映するためにログインが必要です。</string>
+    <string name="bluesky_login_failed_error">ログインに失敗しました。</string>
     <string name="bluesky_rate_limit_error">アクセス制限がかかりました。数分〜数十分待ってから再度お試しください。</string>
     <string name="bluesky_auth_code_invalid_error">認証コードが正しくないか、期限が切れています。</string>
     <string name="bluesky_handle_label">Handle or Email</string>

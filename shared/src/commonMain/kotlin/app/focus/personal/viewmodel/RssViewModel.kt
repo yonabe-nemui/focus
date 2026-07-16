@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** エラーの種別。文言化は UI 層がこの種別に応じてリソースから行う。 */
-enum class FeedErrorKind { GENERIC, AUTH_CODE_INVALID, RATE_LIMITED }
+enum class FeedErrorKind { GENERIC, LOGIN_FAILED, AUTH_CODE_INVALID, RATE_LIMITED }
 
 sealed class RssUiState {
     object Loading : RssUiState()
@@ -144,7 +144,7 @@ class RssViewModel(
                         _uiState.value = RssUiState.Error(e.message.orEmpty(), FeedErrorKind.RATE_LIMITED)
                     }
                     else -> {
-                        _uiState.value = RssUiState.Error("Login failed: ${e.message}")
+                        _uiState.value = RssUiState.Error(e.message.orEmpty(), FeedErrorKind.LOGIN_FAILED)
                     }
                 }
             }
@@ -192,7 +192,7 @@ class RssViewModel(
                 updateList(newItems, source)
             } catch (e: Exception) {
                 Napier.w("loadAllTopics failed: ${e.message}")
-                _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
+                _uiState.value = RssUiState.Error(e.message.orEmpty())
             }
         }
     }
@@ -376,7 +376,7 @@ class RssViewModel(
             try {
                 setColumnState(source, RssUiState.Success(fetchFirstPage(source)))
             } catch (e: Exception) {
-                setColumnState(source, RssUiState.Error(e.message ?: "Error"))
+                setColumnState(source, RssUiState.Error(e.message.orEmpty()))
             }
         }
     }
@@ -392,7 +392,7 @@ class RssViewModel(
                 updateList(newItems, source)
             } catch (e: Exception) {
                 Napier.w("refresh failed: ${e.message}")
-                _uiState.value = RssUiState.Error(e.message ?: "Unknown error")
+                _uiState.value = RssUiState.Error(e.message.orEmpty())
             } finally {
                 _isRefreshing.value = false
             }

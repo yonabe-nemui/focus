@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.FeedItem
+import app.focus.personal.ui.components.feedErrorMessage
 import app.focus.personal.ui.theme.FocusSpacing
 import app.focus.personal.viewmodel.RssSource
 import app.focus.personal.viewmodel.RssUiState
@@ -45,7 +46,6 @@ import app.focus.personal.viewmodel.RssViewModel
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.cd_clear
 import focus.composeapp.generated.resources.cd_settings
-import focus.composeapp.generated.resources.error_prefix
 import focus.composeapp.generated.resources.screen_title_feed
 import focus.composeapp.generated.resources.search_placeholder
 import focus.composeapp.generated.resources.source_bluesky
@@ -196,7 +196,7 @@ fun RssListScreen(
                         is RssUiState.Error -> {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = stringResource(Res.string.error_prefix, state.message),
+                                    text = feedErrorMessage(state),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
