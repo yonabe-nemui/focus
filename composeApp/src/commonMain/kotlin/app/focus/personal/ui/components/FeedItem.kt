@@ -18,6 +18,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -263,11 +264,21 @@ private fun NewsItem(item: RssItem) {
                     )
                 }
                 item.bookmarkCount?.let { count ->
-                    Text(
-                        text = stringResource(Res.string.hatena_user_count, count),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    // ブックマーク数は小型の tonal チップで表示
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        shape = RoundedCornerShape(percent = 50),
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.hatena_user_count, count),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(
+                                horizontal = FocusSpacing.sm,
+                                vertical = FocusSpacing.xxs,
+                            ),
+                        )
+                    }
                 }
             }
         }

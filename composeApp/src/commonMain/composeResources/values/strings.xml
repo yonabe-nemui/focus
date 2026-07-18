@@ -80,7 +80,8 @@
     <!-- Misskey 設定 -->
     <string name="misskey_settings_title">Misskey 設定</string>
     <string name="misskey_settings_description">インスタンスURLを入力してください。APIトークンは任意です（入力するとローカルタイムラインを取得します）。</string>
-    <string name="misskey_instance_url_label">インスタンスURL (例: misskey.io)</string>
+    <string name="misskey_instance_url_label">インスタンスURL</string>
+    <string name="misskey_instance_url_placeholder">misskey.io</string>
     <string name="misskey_api_token_label">APIトークン（任意）</string>
     <string name="misskey_connect_button">接続</string>
 </resources>

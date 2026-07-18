@@ -23,7 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -117,7 +117,7 @@ fun BlueskyLoginScreen(
         }
 
         if (!is2faRequired) {
-            TextField(
+            OutlinedTextField(
                 value = handle,
                 onValueChange = { handle = it.replace("\n", "") },
                 label = { Text(stringResource(Res.string.bluesky_handle_label)) },
@@ -134,7 +134,7 @@ fun BlueskyLoginScreen(
                 singleLine = true,
                 enabled = !isLoading,
             )
-            TextField(
+            OutlinedTextField(
                 value = password,
                 onValueChange = { password = it.replace("\n", "") },
                 label = { Text(stringResource(Res.string.bluesky_password_label)) },
@@ -182,7 +182,7 @@ fun BlueskyLoginScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = FocusSpacing.lg),
             )
-            TextField(
+            OutlinedTextField(
                 value = authCode,
                 onValueChange = { authCode = it.replace("\n", "").replace(" ", "").uppercase() },
                 label = { Text(stringResource(Res.string.bluesky_2fa_label)) },

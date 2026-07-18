@@ -20,7 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +39,7 @@ import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.misskey_api_token_label
 import focus.composeapp.generated.resources.misskey_connect_button
 import focus.composeapp.generated.resources.misskey_instance_url_label
+import focus.composeapp.generated.resources.misskey_instance_url_placeholder
 import focus.composeapp.generated.resources.misskey_settings_description
 import focus.composeapp.generated.resources.misskey_settings_title
 import org.jetbrains.compose.resources.stringResource
@@ -50,7 +51,7 @@ fun MisskeySettingsScreen(
     onSave: (String, String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var instanceUrl by remember { mutableStateOf("misskey.io") }
+    var instanceUrl by remember { mutableStateOf("") }
     var apiToken by remember { mutableStateOf("") }
     var tokenVisible by remember { mutableStateOf(false) }
     val isLoading = uiState is FeedUiState.Loading
@@ -89,10 +90,11 @@ fun MisskeySettingsScreen(
             )
         }
 
-        TextField(
+        OutlinedTextField(
             value = instanceUrl,
             onValueChange = { instanceUrl = it.replace("\n", "") },
             label = { Text(stringResource(Res.string.misskey_instance_url_label)) },
+            placeholder = { Text(stringResource(Res.string.misskey_instance_url_placeholder)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = FocusSpacing.sm),
@@ -100,7 +102,7 @@ fun MisskeySettingsScreen(
             singleLine = true,
             enabled = !isLoading,
         )
-        TextField(
+        OutlinedTextField(
             value = apiToken,
             onValueChange = { apiToken = it.replace("\n", "") },
             label = { Text(stringResource(Res.string.misskey_api_token_label)) },

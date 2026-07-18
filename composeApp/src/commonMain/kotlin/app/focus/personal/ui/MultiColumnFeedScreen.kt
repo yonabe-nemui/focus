@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -226,6 +227,8 @@ private fun FeedColumn(
                             .padding(bottom = FocusSpacing.sm),
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodySmall,
+                        // M3 SearchBar 風の丸形フィールド
+                        shape = RoundedCornerShape(percent = 50),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { onSearch(searchQuery) }),
                     )

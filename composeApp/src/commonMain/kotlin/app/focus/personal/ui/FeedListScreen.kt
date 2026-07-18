@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -146,6 +147,8 @@ fun FeedListScreen(
                             .fillMaxWidth()
                             .padding(horizontal = FocusSpacing.sm, vertical = FocusSpacing.xs),
                         singleLine = true,
+                        // M3 SearchBar 風の丸形フィールド
+                        shape = RoundedCornerShape(percent = 50),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { viewModel.searchFeed(query) }),
                     )
