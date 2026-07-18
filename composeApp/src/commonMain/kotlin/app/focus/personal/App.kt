@@ -106,7 +106,8 @@ fun App(
                 is Screen.WebView -> {
                     WebViewScreen(
                         url = screen.url,
-                        onBack = { navigateBack() }
+                        onBack = { navigateBack() },
+                        onOpenInBrowser = { onLinkClick(screen.url) },
                     )
                 }
                 is Screen.PostDetail -> {

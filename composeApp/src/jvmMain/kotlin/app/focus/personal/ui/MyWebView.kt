@@ -1,7 +1,6 @@
 package app.focus.personal.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,15 +12,18 @@ import java.net.URI
 @Composable
 actual fun MyWebView(
     url: String,
-    modifier: Modifier
+    modifier: Modifier,
+    onProgress: (Float) -> Unit,
+    onTitle: (String) -> Unit,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text("Opening in external browser...")
     }
-    
+
     LaunchedEffect(url) {
         if (Desktop.isDesktopSupported()) {
             Desktop.getDesktop().browse(URI(url))
         }
+        onProgress(1f)
     }
 }

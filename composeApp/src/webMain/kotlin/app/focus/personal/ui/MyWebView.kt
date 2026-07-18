@@ -11,13 +11,16 @@ import kotlinx.browser.window
 @Composable
 actual fun MyWebView(
     url: String,
-    modifier: Modifier
+    modifier: Modifier,
+    onProgress: (Float) -> Unit,
+    onTitle: (String) -> Unit,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text("Opening in new tab...")
     }
-    
+
     LaunchedEffect(url) {
         window.open(url, "_blank")
+        onProgress(1f)
     }
 }
