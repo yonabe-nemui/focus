@@ -29,6 +29,7 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -40,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.input.ImeAction
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.components.EmptyState
@@ -78,7 +80,11 @@ fun FeedListScreen(
     val misskeySettings by viewModel.misskeySettings.collectAsState()
     val searchQueries by viewModel.searchQueries.collectAsState()
 
+    // スクロールでアプリバーを退避し、読書領域を最大化する
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             Column {
                 TopAppBar(
@@ -88,6 +94,7 @@ fun FeedListScreen(
                             Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.cd_settings))
                         }
                     },
+                    scrollBehavior = scrollBehavior,
                 )
                 PrimaryTabRow(selectedTabIndex = currentSource.ordinal) {
                     FeedSource.entries.forEach { source ->
@@ -188,12 +195,14 @@ fun FeedListScreen(
                                 state = lazyListState,
                                 modifier = Modifier.fillMaxSize(),
                             ) {
-                                items(state.items) { item ->
+                                items(state.items, key = { it.link }) { item ->
                                     FeedItem(
                                         item = item,
                                         onClick = onItemClick,
                                         onOpenInBrowser = { onOpenInBrowser(it.link) },
                                         onAddMuteWord = { viewModel.addMuteWordAndRefreshFeed(it) },
+                                        // リフレッシュ時の新着マージ・ミュートによる除外をアニメーションさせる
+                                        modifier = Modifier.animateItem(),
                                     )
                                 }
                                 if (isLoadingMore) {

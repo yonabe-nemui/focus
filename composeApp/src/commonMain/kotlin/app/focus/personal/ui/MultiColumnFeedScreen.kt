@@ -298,12 +298,14 @@ private fun ColumnFeedList(
                     state = lazyListState,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    items(uiState.items) { item ->
+                    items(uiState.items, key = { it.link }) { item ->
                         FeedItem(
                             item = item,
                             onClick = onItemClick,
                             onOpenInBrowser = { onOpenInBrowser(it.link) },
                             onAddMuteWord = onAddMuteWord,
+                            // リフレッシュ時の新着マージ・ミュートによる除外をアニメーションさせる
+                            modifier = Modifier.animateItem(),
                         )
                     }
                 }
