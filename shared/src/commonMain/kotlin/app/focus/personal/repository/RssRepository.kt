@@ -30,6 +30,7 @@ class RssRepository(
 ) : FeedRepository {
     private val sessionStore = SessionStore(database)
     private val muteWordStore = MuteWordStore(database)
+    private val preferenceStore = PreferenceStore(database)
 
     private val googleTopics = listOf(
         "WORLD", "NATION", "BUSINESS", "TECHNOLOGY",
@@ -198,4 +199,8 @@ class RssRepository(
     override suspend fun deleteMuteWord(word: String) = muteWordStore.delete(word)
 
     private fun List<RssItem>.applyLocalMuteWords(): List<RssItem> = muteWordStore.filter(this)
+
+    override fun getPreference(key: String): String? = preferenceStore.get(key)
+
+    override fun setPreference(key: String, value: String) = preferenceStore.put(key, value)
 }

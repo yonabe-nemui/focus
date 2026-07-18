@@ -84,8 +84,11 @@ internal val FocusDarkColorScheme = darkColorScheme(
 
 // ── OLED Black scheme ─────────────────────────────────────────────────────────
 // Dark scheme の派生。background/surface を純黒にして AMOLED 省電力を最大化。
-// ユーザー設定で切り替え可能にする想定（デフォルト OFF）。
+// 設定画面の「OLED ブラック」トグルで切り替える（デフォルト OFF）。
+internal val OledBackground = Color(0xFF000000)
+internal val OledSurface    = Color(0xFF0A0A0A)
+
 internal val FocusOledColorScheme = FocusDarkColorScheme.copy(
-    background = Color(0xFF000000),
-    surface    = Color(0xFF0A0A0A),
+    background = OledBackground,
+    surface    = OledSurface,
 )

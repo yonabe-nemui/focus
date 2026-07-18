@@ -7,6 +7,8 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -41,8 +43,10 @@ fun DesktopApp(
             .build()
     }
 
+    val themeSettings by viewModel.themeSettings.collectAsState()
+
     CompositionLocalProvider(LocalAppImageLoader provides imageLoader) {
-        FocusTheme {
+        FocusTheme(settings = themeSettings) {
             when (val screen = currentScreen) {
                 is Screen.List -> MultiColumnFeedScreen(
                     viewModel = viewModel,
@@ -54,6 +58,7 @@ fun DesktopApp(
                     onNavigateToSettings = { navigateTo(Screen.Settings) }
                 )
                 is Screen.Settings -> SettingsScreen(
+                    viewModel = viewModel,
                     onNavigateToMuteWords = { navigateTo(Screen.MuteWords) },
                     onBack = { navigateBack() }
                 )

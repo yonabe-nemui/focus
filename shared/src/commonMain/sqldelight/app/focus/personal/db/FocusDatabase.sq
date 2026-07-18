@@ -17,6 +17,12 @@ CREATE TABLE MuteWordEntity (
     word TEXT PRIMARY KEY
 );
 
+-- 汎用のキーバリュー設定(テーマ設定等)
+CREATE TABLE UserPreferenceEntity (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
 -- Bluesky Session Queries
 upsertBlueskySession:
 INSERT OR REPLACE INTO BlueskySessionEntity(handle, accessJwt, refreshJwt, did, isActive)
@@ -51,3 +57,10 @@ DELETE FROM MuteWordEntity WHERE word = ?;
 
 selectAllMuteWords:
 SELECT word FROM MuteWordEntity ORDER BY word;
+
+-- User Preference Queries
+upsertPreference:
+INSERT OR REPLACE INTO UserPreferenceEntity(key, value) VALUES (?, ?);
+
+getPreference:
+SELECT value FROM UserPreferenceEntity WHERE key = ?;

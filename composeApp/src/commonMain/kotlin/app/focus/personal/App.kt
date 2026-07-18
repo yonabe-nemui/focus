@@ -3,7 +3,9 @@ package app.focus.personal
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
@@ -56,8 +58,10 @@ fun App(
             .build()
     }
 
+    val themeSettings by viewModel.themeSettings.collectAsState()
+
     CompositionLocalProvider(LocalAppImageLoader provides imageLoader) {
-        FocusTheme {
+        FocusTheme(settings = themeSettings) {
             when (val screen = currentScreen) {
                 is Screen.List -> {
                     // タブレット・折りたたみ展開時(Expanded 相当)はマルチカラム表示に切り替える
@@ -88,6 +92,7 @@ fun App(
                 }
                 is Screen.Settings -> {
                     SettingsScreen(
+                        viewModel = viewModel,
                         onNavigateToMuteWords = { navigateTo(Screen.MuteWords) },
                         onBack = { navigateBack() }
                     )

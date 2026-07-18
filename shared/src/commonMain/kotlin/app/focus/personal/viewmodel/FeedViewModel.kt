@@ -4,6 +4,8 @@ import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssItem
+import app.focus.personal.model.ThemeMode
+import app.focus.personal.model.ThemeSettings
 import app.focus.personal.network.BlueskyException
 import app.focus.personal.repository.FeedRepository
 import app.focus.personal.repository.MuteWordStore
@@ -78,6 +80,10 @@ class FeedViewModel(
     // 検索クエリ。入力欄の表示値も ViewModel を single source of truth とする。
     private val _searchQueries = MutableStateFlow(FeedSource.entries.associateWith { "" })
     val searchQueries: StateFlow<Map<FeedSource, String>> = _searchQueries.asStateFlow()
+
+    // テーマ設定。PreferenceStore から復元し、変更は即永続化する。
+    private val _themeSettings = MutableStateFlow(ThemeSettings.fromPreferences(repository::getPreference))
+    val themeSettings: StateFlow<ThemeSettings> = _themeSettings.asStateFlow()
 
     // モバイル単一カラムの進行中 fetch Job。タブ高速切り替え時の race を防ぐ。
     private var currentLoadJob: Job? = null
@@ -300,6 +306,18 @@ class FeedViewModel(
     }
 
     private fun queryOf(source: FeedSource): String = _searchQueries.value[source].orEmpty()
+
+    fun setThemeMode(mode: ThemeMode) = updateThemeSettings { it.copy(mode = mode) }
+
+    fun setOledBlack(enabled: Boolean) = updateThemeSettings { it.copy(oledBlack = enabled) }
+
+    fun setDynamicColor(enabled: Boolean) = updateThemeSettings { it.copy(dynamicColor = enabled) }
+
+    private fun updateThemeSettings(transform: (ThemeSettings) -> ThemeSettings) {
+        val updated = transform(_themeSettings.value)
+        _themeSettings.value = updated
+        updated.toPreferences().forEach { (key, value) -> repository.setPreference(key, value) }
+    }
 
     /** 入力欄の値を更新する(検索は実行しない)。 */
     fun setSearchQuery(source: FeedSource, query: String) {

@@ -16,6 +16,7 @@ class ServerRssRepository(
 
     private val sessionStore = SessionStore(database)
     private val muteWordStore = MuteWordStore(database)
+    private val preferenceStore = PreferenceStore(database)
 
     override suspend fun fetchAllGoogleTopics(): List<RssItem> =
         muteWordStore.filter(apiClient.fetchGoogleFeed())
@@ -68,4 +69,8 @@ class ServerRssRepository(
     override suspend fun addMuteWord(word: String) = muteWordStore.add(word)
 
     override suspend fun deleteMuteWord(word: String) = muteWordStore.delete(word)
+
+    override fun getPreference(key: String): String? = preferenceStore.get(key)
+
+    override fun setPreference(key: String, value: String) = preferenceStore.put(key, value)
 }

@@ -24,4 +24,8 @@ interface FeedRepository {
     suspend fun fetchMuteWords(): List<String>
     suspend fun addMuteWord(word: String)
     suspend fun deleteMuteWord(word: String)
+
+    /** ユーザー設定(テーマ等)。DB のないプラットフォームでは null / no-op。 */
+    fun getPreference(key: String): String?
+    fun setPreference(key: String, value: String)
 }

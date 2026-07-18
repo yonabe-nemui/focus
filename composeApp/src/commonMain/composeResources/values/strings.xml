@@ -46,6 +46,16 @@
     <!-- 設定 -->
     <string name="settings_mute_words_summary">アプリ内で管理し、すべてのソースに適用するワードを設定</string>
 
+    <!-- テーマ設定 -->
+    <string name="settings_theme_section">テーマ</string>
+    <string name="theme_mode_system">システム</string>
+    <string name="theme_mode_light">ライト</string>
+    <string name="theme_mode_dark">ダーク</string>
+    <string name="theme_oled_title">OLED ブラック</string>
+    <string name="theme_oled_summary">ダークテーマの背景を純黒にし、有機 EL の消費電力を抑えます</string>
+    <string name="theme_dynamic_title">ダイナミックカラー</string>
+    <string name="theme_dynamic_summary">壁紙から生成された配色を使用します</string>
+
     <!-- ミュートワード -->
     <string name="mute_words_description">追加したワードを含む記事はすべてのソースで非表示になります。BlueSky アカウントの公式ミュートワードはここには表示されず、BlueSky フィードにのみ自動適用されます。</string>
     <string name="mute_words_input_label">ミュートするワード</string>
