@@ -1,12 +1,59 @@
 package app.focus.personal.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.inter_bold
+import focus.composeapp.generated.resources.inter_medium
+import focus.composeapp.generated.resources.inter_regular
+import focus.composeapp.generated.resources.noto_sans_jp_bold
+import focus.composeapp.generated.resources.noto_sans_jp_medium
+import focus.composeapp.generated.resources.noto_sans_jp_regular
+import org.jetbrains.compose.resources.Font
 
-// Font families: Inter (Latin) + Noto Sans JP (CJK)
-// composeResources/font/ に TTF を追加し FontFamily 参照に切り替えると有効化できる
+// Font families: Inter (Latin) + Noto Sans JP (CJK)。3ウェイト構成(Regular / Medium / Bold)。
+// SemiBold 指定は最も近い Bold に解決される。
+// skiko ターゲット(Desktop / Web / iOS)は FontFamily 内フォールバックで JP グリフが Noto に解決され、
+// Android は OS 標準フォールバック(Noto Sans CJK)を利用する。
+@Composable
+internal fun focusFontFamily(): FontFamily = FontFamily(
+    Font(Res.font.inter_regular, FontWeight.Normal),
+    Font(Res.font.inter_medium, FontWeight.Medium),
+    Font(Res.font.inter_bold, FontWeight.Bold),
+    Font(Res.font.noto_sans_jp_regular, FontWeight.Normal),
+    Font(Res.font.noto_sans_jp_medium, FontWeight.Medium),
+    Font(Res.font.noto_sans_jp_bold, FontWeight.Bold),
+)
+
+/** バンドルフォントを適用した Typography。FocusTheme 内で解決する。 */
+@Composable
+internal fun focusTypography(): Typography {
+    val family = focusFontFamily()
+    return remember(family) {
+        Typography(
+            displayLarge   = FocusTypography.displayLarge.copy(fontFamily = family),
+            displayMedium  = FocusTypography.displayMedium.copy(fontFamily = family),
+            displaySmall   = FocusTypography.displaySmall.copy(fontFamily = family),
+            headlineLarge  = FocusTypography.headlineLarge.copy(fontFamily = family),
+            headlineMedium = FocusTypography.headlineMedium.copy(fontFamily = family),
+            headlineSmall  = FocusTypography.headlineSmall.copy(fontFamily = family),
+            titleLarge     = FocusTypography.titleLarge.copy(fontFamily = family),
+            titleMedium    = FocusTypography.titleMedium.copy(fontFamily = family),
+            titleSmall     = FocusTypography.titleSmall.copy(fontFamily = family),
+            bodyLarge      = FocusTypography.bodyLarge.copy(fontFamily = family),
+            bodyMedium     = FocusTypography.bodyMedium.copy(fontFamily = family),
+            bodySmall      = FocusTypography.bodySmall.copy(fontFamily = family),
+            labelLarge     = FocusTypography.labelLarge.copy(fontFamily = family),
+            labelMedium    = FocusTypography.labelMedium.copy(fontFamily = family),
+            labelSmall     = FocusTypography.labelSmall.copy(fontFamily = family),
+        )
+    }
+}
 
 internal val FocusTypography = Typography(
 

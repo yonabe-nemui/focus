@@ -64,7 +64,7 @@ fun FocusTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography  = FocusTypography,
+            typography  = focusTypography(),
             shapes      = FocusShapeScheme,
             content     = content,
         )
