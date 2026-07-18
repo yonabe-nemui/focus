@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import app.focus.personal.model.ItemKind
 import app.focus.personal.model.RssItem
 import app.focus.personal.ui.BindBackHandler
+import app.focus.personal.ui.LicensesScreen
 import app.focus.personal.ui.MuteWordSettingsScreen
 import app.focus.personal.ui.theme.FocusTheme
 import app.focus.personal.ui.PostDetailScreen
@@ -31,6 +32,7 @@ sealed class Screen {
     object List : Screen()
     object Settings : Screen()
     object MuteWords : Screen()
+    object Licenses : Screen()
     data class WebView(val url: String) : Screen()
     data class PostDetail(val item: RssItem) : Screen()
 }
@@ -94,7 +96,14 @@ fun App(
                     SettingsScreen(
                         viewModel = viewModel,
                         onNavigateToMuteWords = { navigateTo(Screen.MuteWords) },
+                        onNavigateToLicenses = { navigateTo(Screen.Licenses) },
                         onBack = { navigateBack() }
+                    )
+                }
+                is Screen.Licenses -> {
+                    LicensesScreen(
+                        onBack = { navigateBack() },
+                        onOpenInBrowser = onLinkClick,
                     )
                 }
                 is Screen.MuteWords -> {

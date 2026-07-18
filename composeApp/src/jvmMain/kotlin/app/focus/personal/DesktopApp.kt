@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import app.focus.personal.model.ItemKind
+import app.focus.personal.ui.LicensesScreen
 import app.focus.personal.ui.MultiColumnFeedScreen
 import app.focus.personal.ui.theme.FocusTheme
 import app.focus.personal.ui.MuteWordSettingsScreen
@@ -60,7 +61,12 @@ fun DesktopApp(
                 is Screen.Settings -> SettingsScreen(
                     viewModel = viewModel,
                     onNavigateToMuteWords = { navigateTo(Screen.MuteWords) },
+                    onNavigateToLicenses = { navigateTo(Screen.Licenses) },
                     onBack = { navigateBack() }
+                )
+                is Screen.Licenses -> LicensesScreen(
+                    onBack = { navigateBack() },
+                    onOpenInBrowser = onLinkClick,
                 )
                 is Screen.MuteWords -> MuteWordSettingsScreen(
                     viewModel = viewModel,

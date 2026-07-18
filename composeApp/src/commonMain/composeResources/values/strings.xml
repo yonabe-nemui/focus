@@ -6,6 +6,7 @@
     <string name="screen_title_web_content">News Content</string>
     <string name="screen_title_settings">設定</string>
     <string name="screen_title_mute_words">ローカルミュートワード</string>
+    <string name="screen_title_licenses">ライセンス</string>
 
     <!-- ソース -->
     <string name="source_google">Google</string>
@@ -55,6 +56,8 @@
     <string name="theme_oled_summary">ダークテーマの背景を純黒にし、有機 EL の消費電力を抑えます</string>
     <string name="theme_dynamic_title">ダイナミックカラー</string>
     <string name="theme_dynamic_summary">壁紙から生成された配色を使用します</string>
+    <string name="settings_licenses_summary">利用しているライブラリ・フォントのライセンス</string>
+    <string name="licenses_description">本アプリは以下のオープンソースソフトウェア・フォントを利用しています。タップするとブラウザで詳細を開きます。</string>
 
     <!-- ミュートワード -->
     <string name="mute_words_description">追加したワードを含む記事はすべてのソースで非表示になります。BlueSky アカウントの公式ミュートワードはここには表示されず、BlueSky フィードにのみ自動適用されます。</string>

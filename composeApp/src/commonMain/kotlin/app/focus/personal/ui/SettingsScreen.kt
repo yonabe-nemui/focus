@@ -30,8 +30,10 @@ import app.focus.personal.ui.theme.supportsDynamicColor
 import app.focus.personal.viewmodel.FeedViewModel
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.cd_back
+import focus.composeapp.generated.resources.screen_title_licenses
 import focus.composeapp.generated.resources.screen_title_mute_words
 import focus.composeapp.generated.resources.screen_title_settings
+import focus.composeapp.generated.resources.settings_licenses_summary
 import focus.composeapp.generated.resources.settings_mute_words_summary
 import focus.composeapp.generated.resources.settings_theme_section
 import focus.composeapp.generated.resources.theme_dynamic_summary
@@ -48,6 +50,7 @@ import org.jetbrains.compose.resources.stringResource
 fun SettingsScreen(
     viewModel: FeedViewModel,
     onNavigateToMuteWords: () -> Unit,
+    onNavigateToLicenses: () -> Unit,
     onBack: () -> Unit,
 ) {
     val themeSettings by viewModel.themeSettings.collectAsState()
@@ -129,6 +132,23 @@ fun SettingsScreen(
                     },
                 )
             }
+            SectionDivider()
+
+            // ── ライセンス ──
+            ListItem(
+                headlineContent = { Text(stringResource(Res.string.screen_title_licenses)) },
+                supportingContent = { Text(stringResource(Res.string.settings_licenses_summary)) },
+                trailingContent = {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToLicenses() },
+            )
             SectionDivider()
         }
     }

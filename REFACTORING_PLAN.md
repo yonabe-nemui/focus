@@ -375,6 +375,28 @@ UI 全体レビュー(2026-07-15)で検出したモダナイズ候補。CLAUDE.m
 
 ---
 
+## 利用ライブラリ・フォントとライセンス
+
+アプリ内の「設定 → ライセンス」画面(`LicensesScreen`)にも同じ一覧を表示している。
+フォントのライセンス全文は `composeApp/src/commonMain/composeResources/files/licenses/` に同梱。
+
+| 名称 | 用途 | ライセンス |
+|---|---|---|
+| Kotlin / kotlinx (coroutines, serialization, datetime) | 言語・並行処理・シリアライズ・日時 | Apache-2.0 |
+| Compose Multiplatform | UI フレームワーク | Apache-2.0 |
+| AndroidX (Jetpack: core / appcompat / activity / lifecycle) | Android 基盤 | Apache-2.0 |
+| Ktor (client / server) | HTTP 通信・API サーバー | Apache-2.0 |
+| OkHttp | JVM / Android の HTTP エンジン | Apache-2.0 |
+| SQLDelight | ローカル DB | Apache-2.0 |
+| xmlutil | RSS / RDF の XML パース | Apache-2.0 |
+| Napier | ログ | Apache-2.0 |
+| Coil | 画像読み込み | Apache-2.0 |
+| Logback | サーバーのログ出力(server のみ) | EPL-1.0 / LGPL-2.1 |
+| Inter | バンドルフォント(Latin) | SIL OFL 1.1 |
+| Noto Sans JP | バンドルフォント(日本語) | SIL OFL 1.1 |
+
+---
+
 ## 進め方
 
 1. 各フェーズは独立してコミット可能な粒度に分割する(1項目 = 1コミット目安)
