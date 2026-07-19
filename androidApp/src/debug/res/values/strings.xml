@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_menu_chip">DEBUG</string>
+    <string name="debug_server_dialog_title">接続先サーバー</string>
+    <string name="debug_server_local">ローカルサーバー</string>
+    <string name="debug_server_cloud">Cloud Run</string>
+    <string name="debug_server_unset">未設定(各ソースへ直接アクセス)</string>
+    <string name="debug_server_close">閉じる</string>
+</resources>

@@ -25,22 +25,28 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val viewModel = remember {
                 val database = FocusDatabase(DriverFactory(this@MainActivity).createDriver())
+                // 接続先はビルドタイプ別の resolveServerConfig が決める
+                // (debug はデバッグメニューの選択を反映、release は BuildConfig の値)
+                val serverConfig = resolveServerConfig(this@MainActivity)
                 createFeedViewModel(
                     scope = scope,
                     database = database,
                     engine = OkHttp,
-                    // 空文字列(URL 未設定)なら null にして各ソースへ直接アクセスする
-                    serverBaseUrl = BuildConfig.SERVER_BASE_URL.ifBlank { null },
+                    serverBaseUrl = serverConfig.baseUrl,
+                    serverApiKey = serverConfig.apiKey,
                 )
             }
 
-            App(
-                viewModel = viewModel,
-                onLinkClick = { url ->
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
-                }
-            )
+            // debug のみ接続先切り替えメニューを重ねる。切り替え時は再生成して Repository を作り直す
+            DebugMenuHost(onTargetChanged = { recreate() }) {
+                App(
+                    viewModel = viewModel,
+                    onLinkClick = { url ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                    }
+                )
+            }
         }
     }
 }
