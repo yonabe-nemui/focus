@@ -19,6 +19,9 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+
+        // Compose Multiplatform のリソース (composeResources) を AAR の assets に含めるために必要
+        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
     }
     
     listOf(
