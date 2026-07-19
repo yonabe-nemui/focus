@@ -41,6 +41,7 @@
 | 27 | デスクトップ操作性(ウィンドウ記憶・ショートカット) | UX | 低 | 低 | P5 ✅ |
 | 28 | Android predictive back 未対応 | UX | 低 | 中 | 見送り |
 | 29 | ライセンス表示(計画書一覧 + アプリ内画面) | 追加 | 低 | 低 | P5 ✅ |
+| 30 | サーバー正式ホスティング(Cloud Run)構築 + 手順書 | 追加 | 中 | 低 | P6 ✅ |
 
 ---
 
@@ -390,6 +391,48 @@ UI 全体レビュー(2026-07-15)で検出したモダナイズ候補。CLAUDE.m
 - 本計画書に「利用ライブラリ・フォントとライセンス」一覧を記載し、
   アプリ内にも設定画面から開ける `LicensesScreen`(名称・ライセンス・URL のリスト、
   タップでブラウザ表示)を実装した。
+
+---
+
+## フェーズ6: サーバー正式ホスティング(Cloud Run)【対応済み 2026-07-19】
+
+ローカル PC で動かしていた Ktor サーバーの正式なホスティング先を選定し、構築する。
+
+### 6-1. ホスティング選定
+
+- 候補: Google Cloud Run / Oracle Cloud Always Free / Fly.io / Railway / Render / 国内 VPS
+- **Google Cloud Run (asia-northeast1) を採用**。理由:
+  - サーバーはステートレスな集約プロキシ(DB なし)で、ゼロスケールと相性が良い
+  - 個人利用のトラフィックなら無料枠(月200万リクエスト)内で実質0円
+  - 東京リージョンで低レイテンシ、HTTPS・証明書が自動付与(Android 9+ の平文禁止にも適合)
+- トレードオフ: JVM のコールドスタート数秒は許容(必要なら `--min-instances 1` で解消可)
+
+### 6-2. サーバーの Cloud Run 対応【済】
+
+1. `Application.kt`: Cloud Run が注入する `PORT` 環境変数でリッスンポートを決定
+2. API キー認証: 環境変数 `FOCUS_API_KEY` 設定時のみ `/api` 配下で `X-Api-Key` ヘッダーを検証
+   (公開 URL での野良アクセス・外部 API 中継の防止。`/health` は監視用に無認証)
+3. `server/Dockerfile` + `.gcloudignore`: ローカルビルドの fat JAR(`server-all.jar` に名前固定)を
+   載せるだけの軽量イメージ。shared が Android ターゲットを含む KMP のためコンテナ内フルビルドは回避
+4. クライアント配線: `FocusApiClient` に `apiKey` 追加、`focus.android.serverApiKey`
+   gradle プロパティ → `BuildConfig.SERVER_API_KEY` → `createFeedViewModel(serverApiKey=)` で注入
+5. `ApplicationTest` に認証テスト4件を追加(`:server:test` / `:androidApp:assembleDebug` 確認済み)
+
+### 6-3. 構築手順書の作成【済】
+
+- `server/DEPLOY.md` に初回セットアップ〜デプロイ〜Android 設定〜運用(ログ・キーローテーション)を記載
+- キー管理方針:
+  - サーバー側: Secret Manager に保存し `--set-secrets` で注入(`--set-env-vars` の平文残留を回避)
+  - Android 側: ユーザーホームの `~/.gradle/gradle.properties` に保存(リポジトリへのコミット厳禁)
+  - キー生成はシェル履歴に残らない手順(一時ファイル経由)で行う
+  - キーは APK に埋め込まれるため、APK を不特定多数に配布しない前提の防御であることを明記
+
+### 6-4. 初回デプロイ【済】
+
+1. 専用プロジェクト `focus-server-xfaeuh` を新規作成し、課金紐付け・API 有効化を実施
+2. `DEPLOY.md` の手順で初回デプロイ → curl で疎通確認済み(/health 200・キーなし 401・キーあり 200)
+3. `~/.gradle/gradle.properties` に本番 URL とキーを設定し、`:androidApp:assembleRelease` で確認
+- サービス URL: `https://focus-server-tjk2sfu3cq-an.a.run.app`(リージョン asia-northeast1)
 
 ---
 

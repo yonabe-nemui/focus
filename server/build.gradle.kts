@@ -14,6 +14,13 @@ application {
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
+// Dockerfile が参照するため、fat JAR の名前をバージョン付きにせず固定する
+ktor {
+    fatJar {
+        archiveFileName.set("server-all.jar")
+    }
+}
+
 dependencies {
     implementation(projects.shared)
     implementation(libs.logback)

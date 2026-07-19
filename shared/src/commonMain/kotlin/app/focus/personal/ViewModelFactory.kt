@@ -25,18 +25,20 @@ import kotlinx.serialization.json.Json
  * @param database プラットフォーム別 DB。null なら永続化なし(Web)。
  * @param serverBaseUrl 指定すると自前 Ktor サーバー経由の ServerRssRepository を使う(Android)。
  *   null なら各ソースへ直接アクセスする RssRepository を使う。
+ * @param serverApiKey サーバーが API キー認証(FOCUS_API_KEY)を有効にしている場合に指定する。
  */
 fun createFeedViewModel(
     scope: CoroutineScope,
     database: FocusDatabase? = null,
     engine: HttpClientEngineFactory<*>? = null,
     serverBaseUrl: String? = null,
+    serverApiKey: String? = null,
 ): FeedViewModel {
     val client = createHttpClient(engine)
     val repository: FeedRepository = if (serverBaseUrl != null) {
         ServerRssRepository(
             database = database,
-            apiClient = FocusApiClient(client, serverBaseUrl),
+            apiClient = FocusApiClient(client, serverBaseUrl, serverApiKey),
             blueskyApi = BlueskyClient(client),
         )
     } else {
