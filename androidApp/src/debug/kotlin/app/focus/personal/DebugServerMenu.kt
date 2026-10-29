@@ -1,6 +1,11 @@
 package app.focus.personal
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 
 /** デバッグビルド専用: 接続先(ローカル / Cloud Run)の選択を SharedPreferences に保持する */
@@ -62,6 +69,9 @@ fun resolveServerConfig(context: Context): ServerConfig = when (DebugServerSetti
  */
 @Composable
 fun DebugMenuHost(onTargetChanged: () -> Unit, content: @Composable () -> Unit) {
+    // 許可された時点で初回の読み込みは失敗しているため、再生成して読み直す
+    RequestLocalNetworkPermission(onGranted = onTargetChanged)
+
     Box(Modifier.fillMaxSize()) {
         content()
 
@@ -87,6 +97,28 @@ fun DebugMenuHost(onTargetChanged: () -> Unit, content: @Composable () -> Unit) 
                 onDismiss = { showDialog = false },
                 onTargetChanged = onTargetChanged,
             )
+        }
+    }
+}
+
+/**
+ * Android 17 以降(targetSdk 37)は、ローカルサーバー(エミュレーターの 10.0.2.2・PC の LAN IP)への接続に
+ * ACCESS_LOCAL_NETWORK の実行時許可が必要。接続先がローカルサーバーのときだけ要求する。
+ * release の接続先(Cloud Run・各ソースの公開 API)はローカルネットワークではないため不要。
+ */
+@Composable
+private fun RequestLocalNetworkPermission(onGranted: () -> Unit) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN) return
+    val context = LocalContext.current
+    if (DebugServerSettings.target(context) != DebugServerSettings.TARGET_LOCAL) return
+
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) onGranted()
+    }
+    LaunchedEffect(Unit) {
+        val permission = Manifest.permission.ACCESS_LOCAL_NETWORK
+        if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+            launcher.launch(permission)
         }
     }
 }
