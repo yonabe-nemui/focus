@@ -8,15 +8,13 @@ import nl.adaptivity.xmlutil.serialization.XmlSerialName
 
 @Serializable
 @XmlSerialName("rss", "", "")
-data class RssFeed(
-    val channel: RssChannel = RssChannel()
-)
+data class RssFeed(val channel: RssChannel = RssChannel())
 
 @Serializable
 @XmlSerialName("channel", "", "")
 data class RssChannel(
     @XmlSerialName("item", "", "")
-    val items: List<RssItem> = emptyList()
+    val items: List<RssItem> = emptyList(),
 )
 
 @Serializable

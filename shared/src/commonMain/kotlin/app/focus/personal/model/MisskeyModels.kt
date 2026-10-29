@@ -21,20 +21,13 @@ data class MisskeyFile(
     val url: String = "",
     val thumbnailUrl: String? = null,
     // 画像の代替テキスト（Misskey ではキャプション）
-    val comment: String? = null
+    val comment: String? = null,
 )
 
 @Serializable
-data class MisskeyUser(
-    val username: String,
-    val name: String? = null,
-    val avatarUrl: String? = null
-)
+data class MisskeyUser(val username: String, val name: String? = null, val avatarUrl: String? = null)
 
-data class MisskeySettings(
-    val instanceUrl: String,
-    val apiToken: String? = null
-)
+data class MisskeySettings(val instanceUrl: String, val apiToken: String? = null)
 
 fun MisskeyNote.toRssItem(instanceUrl: String): RssItem {
     val displayText = if (cw != null) "[$cw]\n${text.orEmpty()}" else text.orEmpty()

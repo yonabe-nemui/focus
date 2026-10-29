@@ -13,12 +13,7 @@ import org.jetbrains.compose.resources.stringResource
 
 // Web は記事をブラウザの新規タブで開き、この画面には案内文だけを表示する
 @Composable
-actual fun MyWebView(
-    url: String,
-    modifier: Modifier,
-    onProgress: (Float) -> Unit,
-    onTitle: (String) -> Unit,
-) {
+actual fun MyWebView(url: String, modifier: Modifier, onProgress: (Float) -> Unit, onTitle: (String) -> Unit) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text(stringResource(Res.string.webview_opened_in_new_tab))
     }

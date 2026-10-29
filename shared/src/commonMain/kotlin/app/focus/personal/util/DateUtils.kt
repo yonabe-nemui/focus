@@ -72,6 +72,7 @@ object DateUtils {
                     val m = offsetStr.substring(3, 5).toInt()
                     sign * (h * 60 + m)
                 }
+
                 else -> zoneNameOffsets[offsetStr.uppercase()] ?: 0
             }
 

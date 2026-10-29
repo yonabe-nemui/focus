@@ -13,11 +13,11 @@ import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 /** エラーの種別。文言化は UI 層がこの種別に応じてリソースから行う。 */
 enum class FeedErrorKind { GENERIC, LOGIN_FAILED, AUTH_CODE_INVALID, RATE_LIMITED }
@@ -25,10 +25,7 @@ enum class FeedErrorKind { GENERIC, LOGIN_FAILED, AUTH_CODE_INVALID, RATE_LIMITE
 sealed class FeedUiState {
     object Loading : FeedUiState()
     data class Success(val items: List<RssItem>) : FeedUiState()
-    data class Error(
-        val message: String,
-        val kind: FeedErrorKind = FeedErrorKind.GENERIC,
-    ) : FeedUiState()
+    data class Error(val message: String, val kind: FeedErrorKind = FeedErrorKind.GENERIC) : FeedUiState()
 }
 
 enum class FeedSource { GOOGLE, BLUESKY, MISSKEY }
@@ -36,7 +33,7 @@ enum class FeedSource { GOOGLE, BLUESKY, MISSKEY }
 class FeedViewModel(
     private val repository: FeedRepository,
     private val scope: CoroutineScope,
-    private val dispatcher: CoroutineContext = Dispatchers.Default
+    private val dispatcher: CoroutineContext = Dispatchers.Default,
 ) {
     private val _uiState = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
@@ -67,7 +64,7 @@ class FeedViewModel(
 
     // Desktop マルチカラム用: ソースごとの UI 状態
     private val _columnStates = MutableStateFlow(
-        FeedSource.entries.associateWith<FeedSource, FeedUiState> { FeedUiState.Loading }
+        FeedSource.entries.associateWith<FeedSource, FeedUiState> { FeedUiState.Loading },
     )
     val columnStates: StateFlow<Map<FeedSource, FeedUiState>> = _columnStates.asStateFlow()
 
@@ -87,6 +84,9 @@ class FeedViewModel(
 
     // モバイル単一カラムの進行中 fetch Job。タブ高速切り替え時の race を防ぐ。
     private var currentLoadJob: Job? = null
+
+    // マルチカラム表示(Desktop・タブレット)を一度でも読み込んだか。アカウント変更時にカラムも読み直す
+    private var isMultiColumnActive = false
 
     init {
         checkSavedSession()
@@ -135,7 +135,7 @@ class FeedViewModel(
                 Napier.i("BlueSky login successful for: ${session.handle}")
                 _blueskySession.value = session
                 _is2faRequired.value = false
-                loadCurrentSource()
+                reloadSource(FeedSource.BLUESKY)
             } catch (e: Exception) {
                 Napier.e("BlueSky login failed", e)
                 when (e) {
@@ -144,12 +144,15 @@ class FeedViewModel(
                         _is2faRequired.value = true
                         _uiState.value = FeedUiState.Success(emptyList())
                     }
+
                     is BlueskyException.AuthFactorInvalid -> {
                         _uiState.value = FeedUiState.Error(e.message.orEmpty(), FeedErrorKind.AUTH_CODE_INVALID)
                     }
+
                     is BlueskyException.RateLimited -> {
                         _uiState.value = FeedUiState.Error(e.message.orEmpty(), FeedErrorKind.RATE_LIMITED)
                     }
+
                     else -> {
                         _uiState.value = FeedUiState.Error(e.message.orEmpty(), FeedErrorKind.LOGIN_FAILED)
                     }
@@ -161,32 +164,37 @@ class FeedViewModel(
     fun saveMisskeySettings(instanceUrl: String, apiToken: String?) {
         val settings = MisskeySettings(
             instanceUrl = instanceUrl.trim().trimEnd('/'),
-            apiToken = apiToken?.trim()?.takeIf { it.isNotEmpty() }
+            apiToken = apiToken?.trim()?.takeIf { it.isNotEmpty() },
         )
         repository.saveMisskeySettings(settings)
         _misskeySettings.value = settings
-        resetSourceCache(FeedSource.MISSKEY)
-        if (_currentSource.value == FeedSource.MISSKEY) {
-            loadCurrentSource()
-        }
+        reloadSource(FeedSource.MISSKEY)
     }
 
     fun clearMisskeySettings() {
         _misskeySettings.value = null
-        resetSourceCache(FeedSource.MISSKEY)
         repository.clearMisskeySettings()
-        if (_currentSource.value == FeedSource.MISSKEY) {
-            _uiState.value = FeedUiState.Success(emptyList())
-        }
+        clearSource(FeedSource.MISSKEY)
     }
 
     fun logoutBluesky() {
         _blueskySession.value = null
-        resetSourceCache(FeedSource.BLUESKY)
         repository.clearBlueskySession()
-        if (_currentSource.value == FeedSource.BLUESKY) {
-            _uiState.value = FeedUiState.Success(emptyList())
-        }
+        clearSource(FeedSource.BLUESKY)
+    }
+
+    // ログイン・接続設定の変更後に、そのソースを表示中の単一カラム・マルチカラムの両方で読み直す
+    private fun reloadSource(source: FeedSource) {
+        resetSourceCache(source)
+        if (_currentSource.value == source) loadCurrentSource()
+        if (isMultiColumnActive) loadColumn(source)
+    }
+
+    // ログアウト・接続解除後に、そのソースの表示を空にする
+    private fun clearSource(source: FeedSource) {
+        resetSourceCache(source)
+        if (_currentSource.value == source) _uiState.value = FeedUiState.Success(emptyList())
+        _columnStates.value = _columnStates.value + (source to FeedUiState.Success(emptyList()))
     }
 
     fun loadCurrentSource() {
@@ -209,11 +217,13 @@ class FeedViewModel(
     // モバイル単一カラム・デスクトップマルチカラムの両方から使う。
     private suspend fun fetchFirstPage(source: FeedSource): List<RssItem> = when (source) {
         FeedSource.GOOGLE -> repository.fetchAllGoogleTopics()
+
         FeedSource.BLUESKY -> {
             val result = fetchBlueskyPageWithRetry(null)
             paginationCursor[FeedSource.BLUESKY] = result.nextCursor
             result.items
         }
+
         FeedSource.MISSKEY -> {
             val settings = _misskeySettings.value
             if (settings == null) {
@@ -247,12 +257,14 @@ class FeedViewModel(
                         newItems = result.items
                         nextCursor = result.nextCursor
                     }
+
                     FeedSource.MISSKEY -> {
                         val untilId = paginationCursor[source] ?: return@launch
                         val settings = _misskeySettings.value ?: return@launch
                         newItems = repository.fetchMisskeyPage(queryOf(source), settings, untilId)
                         nextCursor = newItems.lastOrNull()?.guid
                     }
+
                     FeedSource.GOOGLE -> return@launch
                 }
 
@@ -402,6 +414,7 @@ class FeedViewModel(
     // --- Desktop マルチカラム ---
 
     fun loadAllSourcesParallel() {
+        isMultiColumnActive = true
         FeedSource.entries.forEach { source -> loadColumn(source) }
     }
 

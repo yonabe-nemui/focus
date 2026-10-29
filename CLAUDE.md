@@ -33,6 +33,18 @@ iOS: `iosApp/` を Xcode で開く。
 
 **注意**: wasmJs ターゲットは使っていない（導入時点で SQLDelight が未対応だったため）。Web は JS ターゲットのみ。
 
+## Lint
+
+```bash
+# ktlint（全モジュール。ルールは .editorconfig）
+.\gradlew.bat ktlintCheck
+# ktlint の自動修正
+.\gradlew.bat ktlintFormat
+
+# Android Lint（composeApp・shared の Android 向けコードも対象）
+.\gradlew.bat :androidApp:lintDebug
+```
+
 ## テスト実行
 
 ```bash
@@ -85,7 +97,7 @@ iOS: `iosApp/` を Xcode で開く。
 - **スターインポート禁止** — `import package.*` は使わない
 - **文字列のハードコーディング禁止** — 表示文字列は `strings.xml` 等のリソースファイルに定義する
 - **SQLDelight の Boolean** — ネイティブ Boolean ではなく `INTEGER`（Long）で保存（`0L`/`1L`）
-- **開発中の DB マイグレーション** — スキーマ変更時はアプリをアンインストールして DB をリセット。本番運用時は `.sqm` によるマイグレーションが必要
+- **開発中の DB マイグレーション** — スキーマ変更時はアプリをアンインストールして DB をリセット（Desktop は `~/.focus/focus.db` を削除）。本番運用時は `.sqm` によるマイグレーションが必要
 - **Ktor ContentNegotiation** — 全プラットフォームで JSON 設定を適用する（シリアライズに必須）
 - **マルチモジュール依存** — 依存をモジュール間で公開したい場合は `api` を使う、または各モジュールで `implementation` を重複宣言する
 - **BlueSky 2FA フロー** — 2FA 有効アカウントの初回ログインは HTTP 401 (`AuthFactorTokenRequired`) が返る。トークン入力を促してリトライする

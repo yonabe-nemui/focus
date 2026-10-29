@@ -28,19 +28,14 @@ import coil3.compose.AsyncImage
  * 背景タップで閉じる。
  */
 @Composable
-fun ImageViewerDialog(
-    url: String,
-    contentDescription: String?,
-    imageLoader: ImageLoader,
-    onDismiss: () -> Unit,
-) {
+fun ImageViewerDialog(url: String, contentDescription: String?, imageLoader: ImageLoader, onDismiss: () -> Unit) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         var scale by remember { mutableStateOf(1f) }
         var offset by remember { mutableStateOf(Offset.Zero) }
-        val transformState = rememberTransformableState { zoomChange, panChange, _ ->
+        val transformState = rememberTransformableState { _, zoomChange, panChange, _ ->
             scale = (scale * zoomChange).coerceIn(1f, 5f)
             offset = if (scale > 1f) offset + panChange else Offset.Zero
         }

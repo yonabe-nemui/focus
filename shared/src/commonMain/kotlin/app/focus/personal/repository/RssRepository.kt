@@ -26,8 +26,14 @@ class RssRepository(
 ) : BaseFeedRepository(database, blueskyApi) {
 
     private val googleTopics = listOf(
-        "WORLD", "NATION", "BUSINESS", "TECHNOLOGY",
-        "ENTERTAINMENT", "SPORTS", "SCIENCE", "HEALTH"
+        "WORLD",
+        "NATION",
+        "BUSINESS",
+        "TECHNOLOGY",
+        "ENTERTAINMENT",
+        "SPORTS",
+        "SCIENCE",
+        "HEALTH",
     )
 
     // BlueSky 公式ミュートワードのキャッシュ（セッション DID をキー、5 分 TTL）
@@ -91,6 +97,7 @@ class RssRepository(
                 posts = response.feed.map { it.post }
                 nextCursor = response.cursor
             }
+
             query.isNotEmpty() -> {
                 val response = blueskyApi.searchPosts(query, session = session, cursor = cursor)
                 posts = response.posts
@@ -112,8 +119,10 @@ class RssRepository(
         val notes = when {
             token != null && query.isEmpty() ->
                 fetchSafe("Misskey home") { misskeyApi.getHomeTimeline(settings.instanceUrl, token, untilId = untilId) }
+
             query.isNotEmpty() ->
                 fetchSafe("Misskey search") { misskeyApi.searchNotes(settings.instanceUrl, query, token = token, untilId = untilId) }
+
             else -> emptyList()
         }
         return notes

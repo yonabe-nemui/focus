@@ -6,63 +6,31 @@ import kotlinx.serialization.Serializable
 // BlueSky XRPC API のレスポンスのうち、アプリで使う項目だけを定義する(未知のキーは無視してデコード)
 
 @Serializable
-data class BlueskySession(
-    val accessJwt: String,
-    val refreshJwt: String,
-    val handle: String,
-    val did: String
-)
+data class BlueskySession(val accessJwt: String, val refreshJwt: String, val handle: String, val did: String)
 
 @Serializable
-data class BlueskySearchResponse(
-    val posts: List<BlueskyPost> = emptyList(),
-    val cursor: String? = null
-)
+data class BlueskySearchResponse(val posts: List<BlueskyPost> = emptyList(), val cursor: String? = null)
 
 @Serializable
-data class BlueskyTimelineResponse(
-    val feed: List<BlueskyFeedViewPost> = emptyList(),
-    val cursor: String? = null
-)
+data class BlueskyTimelineResponse(val feed: List<BlueskyFeedViewPost> = emptyList(), val cursor: String? = null)
 
 @Serializable
-data class BlueskyFeedViewPost(
-    val post: BlueskyPost
-)
+data class BlueskyFeedViewPost(val post: BlueskyPost)
 
 @Serializable
-data class BlueskyPost(
-    val uri: String,
-    val author: BlueskyProfile,
-    val record: BlueskyRecord,
-    val embed: BlueskyEmbed? = null,
-)
+data class BlueskyPost(val uri: String, val author: BlueskyProfile, val record: BlueskyRecord, val embed: BlueskyEmbed? = null)
 
 @Serializable
-data class BlueskyEmbed(
-    val images: List<BlueskyEmbedImage> = emptyList()
-)
+data class BlueskyEmbed(val images: List<BlueskyEmbedImage> = emptyList())
 
 @Serializable
-data class BlueskyEmbedImage(
-    val thumb: String = "",
-    val fullsize: String = "",
-    val alt: String = ""
-)
+data class BlueskyEmbedImage(val thumb: String = "", val fullsize: String = "", val alt: String = "")
 
 @Serializable
-data class BlueskyProfile(
-    val did: String,
-    val handle: String,
-    val displayName: String? = null,
-    val avatar: String? = null
-)
+data class BlueskyProfile(val did: String, val handle: String, val displayName: String? = null, val avatar: String? = null)
 
 @Serializable
-data class BlueskyRecord(
-    val text: String = "",
-    val createdAt: String = "",
-)
+data class BlueskyRecord(val text: String = "", val createdAt: String = "")
 
 fun BlueskyPost.toRssItem(): RssItem {
     val images = embed?.images?.takeIf { it.isNotEmpty() }

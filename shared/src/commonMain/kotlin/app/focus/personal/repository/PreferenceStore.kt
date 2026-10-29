@@ -11,8 +11,7 @@ class PreferenceStore(database: FocusDatabase?) {
     private val queries = database?.focusDatabaseQueries
     private val memory = mutableMapOf<String, String>()
 
-    fun get(key: String): String? =
-        queries?.getPreference(key)?.executeAsOneOrNull() ?: memory[key]
+    fun get(key: String): String? = queries?.getPreference(key)?.executeAsOneOrNull() ?: memory[key]
 
     fun put(key: String, value: String) {
         val queries = queries

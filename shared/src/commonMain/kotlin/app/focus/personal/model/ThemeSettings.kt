@@ -7,11 +7,7 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
  * ユーザーのテーマ設定。PreferenceStore にキーバリューで永続化される。
  * 文言化・配色の解決は UI 層(composeApp)が行う。
  */
-data class ThemeSettings(
-    val mode: ThemeMode = ThemeMode.SYSTEM,
-    val oledBlack: Boolean = false,
-    val dynamicColor: Boolean = false,
-) {
+data class ThemeSettings(val mode: ThemeMode = ThemeMode.SYSTEM, val oledBlack: Boolean = false, val dynamicColor: Boolean = false) {
     companion object {
         const val KEY_THEME_MODE = "theme_mode"
         const val KEY_OLED_BLACK = "oled_black"

@@ -43,16 +43,16 @@ sealed class Screen {
  *   外部ブラウザで開く(Desktop 用)。false なら画面幅 840dp 以上のときだけマルチカラムにする。
  */
 @Composable
-fun App(
-    viewModel: FeedViewModel,
-    onLinkClick: (String) -> Unit,
-    isDesktop: Boolean = false,
-) {
+fun App(viewModel: FeedViewModel, onLinkClick: (String) -> Unit, isDesktop: Boolean = false) {
     val backStack = remember { mutableStateListOf<Screen>(Screen.List) }
     val currentScreen = backStack.lastOrNull() ?: Screen.List
 
-    fun navigateTo(screen: Screen) { backStack.add(screen) }
-    fun navigateBack() { if (backStack.size > 1) backStack.removeAt(backStack.size - 1) }
+    fun navigateTo(screen: Screen) {
+        backStack.add(screen)
+    }
+    fun navigateBack() {
+        if (backStack.size > 1) backStack.removeAt(backStack.size - 1)
+    }
 
     if (backStack.size > 1) {
         BindBackHandler { navigateBack() }
@@ -96,25 +96,30 @@ fun App(
                         )
                     }
                 }
+
                 is Screen.Settings -> SettingsScreen(
                     viewModel = viewModel,
                     onNavigateToMuteWords = { navigateTo(Screen.MuteWords) },
                     onNavigateToLicenses = { navigateTo(Screen.Licenses) },
                     onBack = { navigateBack() },
                 )
+
                 is Screen.Licenses -> LicensesScreen(
                     onBack = { navigateBack() },
                     onOpenInBrowser = onLinkClick,
                 )
+
                 is Screen.MuteWords -> MuteWordSettingsScreen(
                     viewModel = viewModel,
                     onBack = { navigateBack() },
                 )
+
                 is Screen.WebView -> WebViewScreen(
                     url = screen.url,
                     onBack = { navigateBack() },
                     onOpenInBrowser = { onLinkClick(screen.url) },
                 )
+
                 is Screen.PostDetail -> PostDetailScreen(
                     item = screen.item,
                     onBack = { navigateBack() },

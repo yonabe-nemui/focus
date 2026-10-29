@@ -10,12 +10,12 @@ class DateUtilsTest {
     fun testParseRfc822ToMillis() {
         val date1 = "Fri, 28 Mar 2025 15:45:00 +0900"
         val millis1 = DateUtils.parseRfc822ToMillis(date1)
-        
+
         val date2 = "Fri, 28 Mar 2025 15:46:00 +0900"
         val millis2 = DateUtils.parseRfc822ToMillis(date2)
-        
+
         assertTrue(millis2 > millis1, "Later date should have larger millis")
-        
+
         // Test different timezone
         val date3 = "Fri, 28 Mar 2025 06:45:00 +0000" // Same as 15:45 +0900
         val millis3 = DateUtils.parseRfc822ToMillis(date3)

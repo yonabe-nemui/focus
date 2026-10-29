@@ -12,15 +12,14 @@ import app.focus.personal.model.MisskeySettings
 class SessionStore(database: FocusDatabase?) {
     private val queries = database?.focusDatabaseQueries
 
-    fun getBlueskySession(): BlueskySession? =
-        queries?.getActiveBlueskySession()?.executeAsOneOrNull()?.let { entity ->
-            BlueskySession(
-                accessJwt = entity.accessJwt,
-                refreshJwt = entity.refreshJwt,
-                handle = entity.handle,
-                did = entity.did
-            )
-        }
+    fun getBlueskySession(): BlueskySession? = queries?.getActiveBlueskySession()?.executeAsOneOrNull()?.let { entity ->
+        BlueskySession(
+            accessJwt = entity.accessJwt,
+            refreshJwt = entity.refreshJwt,
+            handle = entity.handle,
+            did = entity.did,
+        )
+    }
 
     fun saveBlueskySession(session: BlueskySession) {
         queries?.transaction {
@@ -30,7 +29,7 @@ class SessionStore(database: FocusDatabase?) {
                 accessJwt = session.accessJwt,
                 refreshJwt = session.refreshJwt,
                 did = session.did,
-                isActive = 1L
+                isActive = 1L,
             )
         }
     }
@@ -39,18 +38,17 @@ class SessionStore(database: FocusDatabase?) {
         queries?.clearActiveBlueskySession()
     }
 
-    fun getMisskeySettings(): MisskeySettings? =
-        queries?.getActiveMisskeySettings()?.executeAsOneOrNull()?.let { entity ->
-            MisskeySettings(
-                instanceUrl = entity.instanceUrl,
-                apiToken = entity.apiToken
-            )
-        }
+    fun getMisskeySettings(): MisskeySettings? = queries?.getActiveMisskeySettings()?.executeAsOneOrNull()?.let { entity ->
+        MisskeySettings(
+            instanceUrl = entity.instanceUrl,
+            apiToken = entity.apiToken,
+        )
+    }
 
     fun saveMisskeySettings(settings: MisskeySettings) {
         queries?.upsertMisskeySettings(
             instanceUrl = settings.instanceUrl,
-            apiToken = settings.apiToken
+            apiToken = settings.apiToken,
         )
     }
 

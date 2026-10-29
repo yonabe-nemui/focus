@@ -25,17 +25,12 @@ data class MisskeyFeedRequest(val instanceUrl: String, val apiToken: String?, va
 /** サーバーの /api 配下を保護する簡易認証ヘッダー名（サーバー側と共有） */
 const val FOCUS_API_KEY_HEADER = "X-Api-Key"
 
-class FocusApiClient(
-    private val client: HttpClient,
-    private val baseUrl: String,
-    private val apiKey: String? = null,
-) {
+class FocusApiClient(private val client: HttpClient, private val baseUrl: String, private val apiKey: String? = null) {
     private fun HttpRequestBuilder.applyApiKey() {
         apiKey?.let { header(FOCUS_API_KEY_HEADER, it) }
     }
 
-    suspend fun fetchGoogleFeed(): List<RssItem> =
-        client.get("$baseUrl/api/feed/google") { applyApiKey() }.body()
+    suspend fun fetchGoogleFeed(): List<RssItem> = client.get("$baseUrl/api/feed/google") { applyApiKey() }.body()
 
     suspend fun fetchBlueskyPage(accessJwt: String?, query: String, cursor: String?): PagedFeedResponse {
         val response: HttpResponse = client.post("$baseUrl/api/feed/bluesky") {
@@ -60,5 +55,4 @@ class FocusApiClient(
         }
         return response.body()
     }
-
 }

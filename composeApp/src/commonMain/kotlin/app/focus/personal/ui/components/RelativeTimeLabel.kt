@@ -22,9 +22,13 @@ fun relativeTimeLabel(pubDateMillis: Long, fallback: String?): String? {
     val relative = remember(pubDateMillis) { RelativeTime.of(pubDateMillis) } ?: return fallback
     return when (relative) {
         is RelativeTime.JustNow -> stringResource(Res.string.time_just_now)
+
         is RelativeTime.MinutesAgo -> stringResource(Res.string.time_minutes_ago, relative.minutes)
+
         is RelativeTime.HoursAgo -> stringResource(Res.string.time_hours_ago, relative.hours)
+
         is RelativeTime.DaysAgo -> stringResource(Res.string.time_days_ago, relative.days)
+
         is RelativeTime.AbsoluteDate ->
             if (relative.withYear) {
                 stringResource(Res.string.time_date_with_year, relative.year, relative.month, relative.day)

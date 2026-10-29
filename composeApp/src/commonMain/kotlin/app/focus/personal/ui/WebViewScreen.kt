@@ -32,11 +32,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WebViewScreen(
-    url: String,
-    onBack: () -> Unit,
-    onOpenInBrowser: (() -> Unit)? = null,
-) {
+fun WebViewScreen(url: String, onBack: () -> Unit, onOpenInBrowser: (() -> Unit)? = null) {
     var pageTitle by remember(url) { mutableStateOf<String?>(null) }
     var progress by remember(url) { mutableFloatStateOf(0f) }
 

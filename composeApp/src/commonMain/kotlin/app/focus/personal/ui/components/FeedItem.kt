@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -28,13 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.focus.personal.LocalAppImageLoader
 import app.focus.personal.model.ItemKind
 import app.focus.personal.model.RssItem
+import app.focus.personal.ui.rememberCopyToClipboard
 import app.focus.personal.ui.theme.FocusShape
 import app.focus.personal.ui.theme.FocusSpacing
 import focus.composeapp.generated.resources.Res
@@ -65,7 +64,7 @@ fun FeedItem(
 ) {
     var isMenuOpen by remember { mutableStateOf(false) }
     var isMuteDialogOpen by remember { mutableStateOf(false) }
-    val clipboardManager = LocalClipboardManager.current
+    val copyToClipboard = rememberCopyToClipboard()
 
     Box(modifier = modifier.fillMaxWidth()) {
         Column(
@@ -100,7 +99,7 @@ fun FeedItem(
                 text = { Text(stringResource(Res.string.menu_copy_link)) },
                 onClick = {
                     isMenuOpen = false
-                    clipboardManager.setText(AnnotatedString(item.link))
+                    copyToClipboard(item.link)
                 },
             )
             if (onAddMuteWord != null) {
@@ -128,10 +127,7 @@ fun FeedItem(
 
 /** フィードから直接ミュートワードを追加するダイアログ。 */
 @Composable
-private fun AddMuteWordDialog(
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
+private fun AddMuteWordDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
     var word by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -261,11 +257,7 @@ private fun NewsItem(item: RssItem) {
 
 /** 1 枚: フル幅 180dp / 複数: 2×2 グリッド(最大 4 枚)。 */
 @Composable
-private fun FeedImageGallery(
-    imageUrls: List<String>,
-    imageAlts: List<String>?,
-    modifier: Modifier = Modifier,
-) {
+private fun FeedImageGallery(imageUrls: List<String>, imageAlts: List<String>?, modifier: Modifier = Modifier) {
     val imageLoader = LocalAppImageLoader.current ?: return
     fun altAt(index: Int): String? = imageAlts?.getOrNull(index)?.takeIf { it.isNotBlank() }
 

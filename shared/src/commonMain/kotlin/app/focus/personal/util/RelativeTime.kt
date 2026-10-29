@@ -44,9 +44,13 @@ sealed class RelativeTime {
             val diff = nowMillis - epochMillis
             return when {
                 diff < MINUTE_MILLIS -> JustNow
+
                 diff < HOUR_MILLIS -> MinutesAgo((diff / MINUTE_MILLIS).toInt())
+
                 diff < DAY_MILLIS -> HoursAgo((diff / HOUR_MILLIS).toInt())
+
                 diff < 7 * DAY_MILLIS -> DaysAgo((diff / DAY_MILLIS).toInt())
+
                 else -> {
                     val date = Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(timeZone).date
                     val nowYear = Instant.fromEpochMilliseconds(nowMillis).toLocalDateTime(timeZone).date.year

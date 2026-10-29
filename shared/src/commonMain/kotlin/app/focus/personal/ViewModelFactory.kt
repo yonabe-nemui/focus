@@ -51,17 +51,16 @@ fun createFeedViewModel(
     return FeedViewModel(repository, scope)
 }
 
-private fun createHttpClient(engine: HttpClientEngineFactory<*>?): HttpClient =
-    if (engine != null) {
-        HttpClient(engine) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-        }
-    } else {
-        HttpClient {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
+private fun createHttpClient(engine: HttpClientEngineFactory<*>?): HttpClient = if (engine != null) {
+    HttpClient(engine) {
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
         }
     }
+} else {
+    HttpClient {
+        install(ContentNegotiation) {
+            json(Json { ignoreUnknownKeys = true })
+        }
+    }
+}

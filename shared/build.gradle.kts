@@ -8,19 +8,24 @@ plugins {
 }
 
 kotlin {
+    compilerOptions {
+        // DriverFactory の expect/actual class は Beta 機能のため、毎回の警告を抑制する
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     android {
         namespace = "app.focus.personal.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
-        
+
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     iosArm64()
     iosSimulatorArm64()
-    
+
     jvm()
 
     js {

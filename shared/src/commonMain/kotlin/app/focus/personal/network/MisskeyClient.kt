@@ -18,7 +18,7 @@ class MisskeyClient(private val client: HttpClient) {
         query: String,
         limit: Int = 20,
         token: String? = null,
-        untilId: String? = null
+        untilId: String? = null,
     ): List<MisskeyNote> {
         val requestBody = buildJsonObject {
             put("query", query)
@@ -33,12 +33,7 @@ class MisskeyClient(private val client: HttpClient) {
         }.body()
     }
 
-    suspend fun getHomeTimeline(
-        instanceUrl: String,
-        token: String,
-        limit: Int = 20,
-        untilId: String? = null
-    ): List<MisskeyNote> {
+    suspend fun getHomeTimeline(instanceUrl: String, token: String, limit: Int = 20, untilId: String? = null): List<MisskeyNote> {
         val requestBody = buildJsonObject {
             put("limit", limit)
             put("i", token)

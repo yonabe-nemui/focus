@@ -26,11 +26,7 @@ class BlueskyClient(private val client: HttpClient) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun createSession(
-        handle: String,
-        appPassword: String,
-        authCode: String? = null
-    ): BlueskySession {
+    suspend fun createSession(handle: String, appPassword: String, authCode: String? = null): BlueskySession {
         val response: HttpResponse = client.post("$baseUrl/com.atproto.server.createSession") {
             contentType(ContentType.Application.Json)
             val bodyMap = mutableMapOf("identifier" to handle, "password" to appPassword)
@@ -54,8 +50,8 @@ class BlueskyClient(private val client: HttpClient) {
         }
         if (response.status == HttpStatusCode.Unauthorized) {
             val is2fa = responseBody.contains("AuthFactor", ignoreCase = true) ||
-                    responseBody.contains("sign in code", ignoreCase = true) ||
-                    responseBody.contains("sign on code", ignoreCase = true)
+                responseBody.contains("sign in code", ignoreCase = true) ||
+                responseBody.contains("sign on code", ignoreCase = true)
             when {
                 is2fa && authCode == null -> throw BlueskyException.AuthFactorRequired()
                 is2fa -> throw BlueskyException.AuthFactorInvalid()
@@ -114,7 +110,7 @@ class BlueskyClient(private val client: HttpClient) {
         query: String,
         sort: String = "latest",
         session: BlueskySession? = null,
-        cursor: String? = null
+        cursor: String? = null,
     ): BlueskySearchResponse {
         val url = if (session != null) baseUrl else publicApiUrl
         val response = client.get("$url/app.bsky.feed.searchPosts") {

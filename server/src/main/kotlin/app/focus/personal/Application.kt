@@ -2,13 +2,15 @@ package app.focus.personal
 
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
-import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.BlueSkyFeedRequest
+import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.FOCUS_API_KEY_HEADER
 import app.focus.personal.network.GoogleRssClient
 import app.focus.personal.network.MisskeyClient
 import app.focus.personal.network.MisskeyFeedRequest
 import app.focus.personal.repository.RssRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -25,10 +27,8 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import kotlinx.serialization.json.Json
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 
 private const val DEFAULT_PORT = 8080
 
@@ -40,9 +40,7 @@ fun main() {
 }
 
 // ミュートワードのフィルタはクライアント側（MuteWordStore）で行うため、サーバーは素通しで返す。
-fun Application.module(
-    apiKey: String? = System.getenv("FOCUS_API_KEY")?.takeIf { it.isNotBlank() },
-) {
+fun Application.module(apiKey: String? = System.getenv("FOCUS_API_KEY")?.takeIf { it.isNotBlank() }) {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
@@ -70,7 +68,7 @@ fun Application.module(
         database = null,
         googleApi = GoogleRssClient(httpClient),
         blueskyApi = BlueskyClient(httpClient),
-        misskeyApi = MisskeyClient(httpClient)
+        misskeyApi = MisskeyClient(httpClient),
     )
 
     routing {

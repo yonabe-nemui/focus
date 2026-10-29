@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 
 /** デバッグビルド専用: 接続先(ローカル / Cloud Run)の選択を SharedPreferences に保持する */
 object DebugServerSettings {
@@ -33,28 +34,27 @@ object DebugServerSettings {
     private const val PREFS_NAME = "debug_server_settings"
     private const val KEY_TARGET = "target"
 
-    fun target(context: Context): String =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_TARGET, TARGET_LOCAL) ?: TARGET_LOCAL
+    fun target(context: Context): String = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getString(KEY_TARGET, TARGET_LOCAL) ?: TARGET_LOCAL
 
     fun setTarget(context: Context, value: String) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putString(KEY_TARGET, value).apply()
+            .edit { putString(KEY_TARGET, value) }
     }
 }
 
-fun resolveServerConfig(context: Context): ServerConfig =
-    when (DebugServerSettings.target(context)) {
-        DebugServerSettings.TARGET_CLOUD -> ServerConfig(
-            baseUrl = BuildConfig.SERVER_BASE_URL_CLOUD.ifBlank { null },
-            apiKey = BuildConfig.SERVER_API_KEY.ifBlank { null },
-        )
-        // ローカルサーバーは FOCUS_API_KEY なしで起動する想定。平文 HTTP にキーを乗せない
-        else -> ServerConfig(
-            baseUrl = BuildConfig.SERVER_BASE_URL.ifBlank { null },
-            apiKey = null,
-        )
-    }
+fun resolveServerConfig(context: Context): ServerConfig = when (DebugServerSettings.target(context)) {
+    DebugServerSettings.TARGET_CLOUD -> ServerConfig(
+        baseUrl = BuildConfig.SERVER_BASE_URL_CLOUD.ifBlank { null },
+        apiKey = BuildConfig.SERVER_API_KEY.ifBlank { null },
+    )
+
+    // ローカルサーバーは FOCUS_API_KEY なしで起動する想定。平文 HTTP にキーを乗せない
+    else -> ServerConfig(
+        baseUrl = BuildConfig.SERVER_BASE_URL.ifBlank { null },
+        apiKey = null,
+    )
+}
 
 /**
  * デバッグビルド専用: 画面左下に DEBUG チップを重ね、タップで接続先切り替えダイアログを開く。

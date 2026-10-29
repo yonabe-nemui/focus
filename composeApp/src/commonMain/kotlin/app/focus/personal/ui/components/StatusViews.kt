@@ -26,11 +26,7 @@ import org.jetbrains.compose.resources.stringResource
 
 /** エラー状態の表示。アイコン + 説明 + リトライボタン。 */
 @Composable
-fun ErrorState(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun ErrorState(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     StatusView(icon = Icons.Default.CloudOff, message = message, modifier = modifier) {
         Spacer(Modifier.height(FocusSpacing.lg))
         OutlinedButton(onClick = onRetry) {
@@ -41,22 +37,13 @@ fun ErrorState(
 
 /** 空状態の表示。検索0件・フィード空などで使う。 */
 @Composable
-fun EmptyState(
-    icon: ImageVector,
-    message: String,
-    modifier: Modifier = Modifier,
-) {
+fun EmptyState(icon: ImageVector, message: String, modifier: Modifier = Modifier) {
     StatusView(icon = icon, message = message, modifier = modifier)
 }
 
 /** 中央寄せのアイコン + 説明文。[action] はその下に並べる。 */
 @Composable
-private fun StatusView(
-    icon: ImageVector,
-    message: String,
-    modifier: Modifier = Modifier,
-    action: @Composable () -> Unit = {},
-) {
+private fun StatusView(icon: ImageVector, message: String, modifier: Modifier = Modifier, action: @Composable () -> Unit = {}) {
     Column(
         modifier = modifier
             .fillMaxSize()

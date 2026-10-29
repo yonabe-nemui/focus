@@ -11,33 +11,29 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.AutofillNode
-import androidx.compose.ui.autofill.AutofillType
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalAutofillTree
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -58,22 +54,21 @@ import focus.composeapp.generated.resources.bluesky_password_label
 import focus.composeapp.generated.resources.bluesky_verify_button
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BlueskyLoginScreen(
     is2faRequired: Boolean,
     uiState: FeedUiState,
     onLogin: (String, String, String?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var handle by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var authCode by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    val clipboardManager = LocalClipboardManager.current
+    val copyToClipboard = rememberCopyToClipboard()
     val isLoading = uiState is FeedUiState.Loading
-    val autofillTree = LocalAutofillTree.current
 
     Column(
         modifier = modifier
@@ -109,7 +104,7 @@ fun BlueskyLoginScreen(
                         .padding(bottom = FocusSpacing.lg)
                         .combinedClickable(
                             onClick = {},
-                            onLongClick = { clipboardManager.setText(AnnotatedString(uiState.message)) },
+                            onLongClick = { copyToClipboard(uiState.message) },
                         ),
                 )
             }
@@ -123,12 +118,7 @@ fun BlueskyLoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = FocusSpacing.sm)
-                    .onGloballyPositioned {
-                        autofillTree += AutofillNode(
-                            autofillTypes = listOf(AutofillType.Username, AutofillType.EmailAddress),
-                            onFill = { handle = it },
-                        )
-                    },
+                    .semantics { contentType = ContentType.Username + ContentType.EmailAddress },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, autoCorrectEnabled = false),
                 singleLine = true,
                 enabled = !isLoading,
@@ -143,7 +133,7 @@ fun BlueskyLoginScreen(
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                             contentDescription = stringResource(
-                                if (passwordVisible) Res.string.bluesky_cd_hide_password else Res.string.bluesky_cd_show_password
+                                if (passwordVisible) Res.string.bluesky_cd_hide_password else Res.string.bluesky_cd_show_password,
                             ),
                         )
                     }
@@ -151,12 +141,7 @@ fun BlueskyLoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = FocusSpacing.lg)
-                    .onGloballyPositioned {
-                        autofillTree += AutofillNode(
-                            autofillTypes = listOf(AutofillType.Password),
-                            onFill = { password = it },
-                        )
-                    },
+                    .semantics { contentType = ContentType.Password },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                 singleLine = true,
                 enabled = !isLoading,

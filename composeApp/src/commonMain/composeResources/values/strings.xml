@@ -48,6 +48,13 @@
 
     <!-- テーマ設定 -->
     <string name="settings_theme_section">テーマ</string>
+    <string name="settings_account_section">アカウント</string>
+    <string name="settings_bluesky_logged_in">%1$s でログイン中</string>
+    <string name="settings_bluesky_logout">ログアウト</string>
+    <string name="settings_bluesky_logout_confirm">BlueSky からログアウトしますか？</string>
+    <string name="settings_misskey_connected">%1$s に接続中</string>
+    <string name="settings_misskey_disconnect">接続を解除</string>
+    <string name="settings_misskey_disconnect_confirm">Misskey との接続を解除しますか？保存した API トークンも削除されます。</string>
     <string name="theme_mode_system">システム</string>
     <string name="theme_mode_light">ライト</string>
     <string name="theme_mode_dark">ダーク</string>

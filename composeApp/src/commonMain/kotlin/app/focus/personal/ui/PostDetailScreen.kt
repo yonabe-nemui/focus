@@ -45,11 +45,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PostDetailScreen(
-    item: RssItem,
-    onBack: () -> Unit,
-    onOpenInBrowser: () -> Unit,
-) {
+fun PostDetailScreen(item: RssItem, onBack: () -> Unit, onOpenInBrowser: () -> Unit) {
     val imageLoader = LocalAppImageLoader.current
     val authorName = item.authorName ?: item.title
     val authorAvatarUrl = item.authorAvatarUrl

@@ -9,10 +9,7 @@ import app.focus.personal.network.BlueskyClient
  * RssRepository / ServerRssRepository で共通の処理。
  * BlueSky 認証・Misskey 設定・ローカルミュートワード・ユーザー設定はどちらもクライアント側で扱う。
  */
-abstract class BaseFeedRepository(
-    database: FocusDatabase?,
-    protected val blueskyApi: BlueskyClient,
-) : FeedRepository {
+abstract class BaseFeedRepository(database: FocusDatabase?, protected val blueskyApi: BlueskyClient) : FeedRepository {
     private val sessionStore = SessionStore(database)
     protected val muteWordStore = MuteWordStore(database)
     private val preferenceStore = PreferenceStore(database)

@@ -51,7 +51,7 @@ class RssRepositoryTest {
             respond(
                 content = mockXml,
                 status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, "application/xml")
+                headers = headersOf(HttpHeaders.ContentType, "application/xml"),
             )
         }
         val client = HttpClient(mockEngine)
@@ -59,7 +59,7 @@ class RssRepositoryTest {
             database = database,
             googleApi = GoogleRssClient(client),
             blueskyApi = BlueskyClient(client),
-            misskeyApi = MisskeyClient(client)
+            misskeyApi = MisskeyClient(client),
         )
     }
 

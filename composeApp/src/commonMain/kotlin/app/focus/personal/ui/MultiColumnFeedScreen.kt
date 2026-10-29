@@ -27,9 +27,9 @@ import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -111,8 +111,11 @@ fun MultiColumnFeedScreen(
             val fitsAll = maxWidth >= minColumnWidth * sourceCount
             val columnWidth = if (fitsAll) maxWidth / sourceCount else minColumnWidth
 
-            val rowModifier = if (fitsAll) Modifier.fillMaxSize()
-            else Modifier.fillMaxSize().horizontalScroll(rememberScrollState())
+            val rowModifier = if (fitsAll) {
+                Modifier.fillMaxSize()
+            } else {
+                Modifier.fillMaxSize().horizontalScroll(rememberScrollState())
+            }
 
             Row(modifier = rowModifier) {
                 FeedSource.entries.forEachIndexed { index, source ->
@@ -167,7 +170,7 @@ private fun FeedColumn(
 ) {
     val hasSearch = source == FeedSource.BLUESKY || source == FeedSource.MISSKEY
     val needsAuth = (source == FeedSource.BLUESKY && blueskySession == null) ||
-                    (source == FeedSource.MISSKEY && misskeySettings == null)
+        (source == FeedSource.MISSKEY && misskeySettings == null)
     val isLoading = uiState is FeedUiState.Loading
 
     Column(modifier = modifier) {
@@ -217,7 +220,11 @@ private fun FeedColumn(
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { onSearch("") }) {
-                                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.cd_clear), modifier = Modifier.size(16.dp))
+                                    Icon(
+                                        Icons.Default.Clear,
+                                        contentDescription = stringResource(Res.string.cd_clear),
+                                        modifier = Modifier.size(16.dp),
+                                    )
                                 }
                             }
                         },
@@ -245,11 +252,13 @@ private fun FeedColumn(
                     uiState = loginUiState,
                     onLogin = onLogin,
                 )
+
             source == FeedSource.MISSKEY && misskeySettings == null ->
                 MisskeySettingsScreen(
                     uiState = loginUiState,
                     onSave = onSaveMisskey,
                 )
+
             else -> ColumnFeedList(
                 uiState = uiState,
                 onItemClick = onItemClick,
@@ -275,12 +284,13 @@ private fun ColumnFeedList(
 ) {
     when (uiState) {
         is FeedUiState.Loading -> FeedListSkeleton(modifier = Modifier.fillMaxSize())
+
         is FeedUiState.Success -> {
             if (uiState.items.isEmpty()) {
                 EmptyState(
                     icon = if (isSearching) Icons.Default.SearchOff else Icons.Default.Inbox,
                     message = stringResource(
-                        if (isSearching) Res.string.empty_search_results else Res.string.empty_feed
+                        if (isSearching) Res.string.empty_search_results else Res.string.empty_feed,
                     ),
                 )
             } else {
@@ -314,6 +324,7 @@ private fun ColumnFeedList(
                 }
             }
         }
+
         is FeedUiState.Error -> ErrorState(
             message = feedErrorMessage(uiState),
             onRetry = onRetry,

@@ -59,12 +59,18 @@ android {
     // デバッグメニュー(接続先切り替え)はビルドタイプ別ソースセット(src/debug/kotlin・src/release/kotlin)で出し分ける。
     // built-in Kotlin は src/<sourceSet>/kotlin を既定で参照するため sourceSets の指定は不要
     // Kotlin の jvmTarget は built-in Kotlin では targetCompatibility に揃う
+
+    // Android Lint: .\gradlew.bat :androidApp:lintDebug (composeApp・shared の Android 向けコードも対象)
+    lint {
+        checkDependencies = true
+    }
 }
 
 dependencies {
     implementation(projects.composeApp)
     implementation(projects.shared)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.napier)
     debugImplementation(libs.compose.uiTooling)
@@ -72,5 +78,4 @@ dependencies {
     debugImplementation(libs.compose.foundation)
     debugImplementation(libs.compose.material3)
     debugImplementation(libs.compose.ui)
-
 }

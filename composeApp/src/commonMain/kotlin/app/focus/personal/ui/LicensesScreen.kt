@@ -27,11 +27,7 @@ import focus.composeapp.generated.resources.screen_title_licenses
 import org.jetbrains.compose.resources.stringResource
 
 /** 利用ライブラリ・フォントのライセンス情報。名称・ライセンス識別子は固有名詞のためリソース化しない。 */
-private data class LicenseEntry(
-    val name: String,
-    val license: String,
-    val url: String,
-)
+private data class LicenseEntry(val name: String, val license: String, val url: String)
 
 private val licenseEntries = listOf(
     LicenseEntry("Kotlin / kotlinx (coroutines, serialization, datetime)", "Apache License 2.0", "https://github.com/JetBrains/kotlin"),
@@ -50,10 +46,7 @@ private val licenseEntries = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LicensesScreen(
-    onBack: () -> Unit,
-    onOpenInBrowser: (String) -> Unit,
-) {
+fun LicensesScreen(onBack: () -> Unit, onOpenInBrowser: (String) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(

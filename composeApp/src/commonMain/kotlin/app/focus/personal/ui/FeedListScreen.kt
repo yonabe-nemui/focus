@@ -24,8 +24,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -170,13 +170,14 @@ fun FeedListScreen(
                         is FeedUiState.Loading -> {
                             FeedListSkeleton(modifier = Modifier.fillMaxSize())
                         }
+
                         is FeedUiState.Success -> {
                             if (state.items.isEmpty()) {
                                 val isSearching = searchQueries[currentSource].orEmpty().isNotBlank()
                                 EmptyState(
                                     icon = if (isSearching) Icons.Default.SearchOff else Icons.Default.Inbox,
                                     message = stringResource(
-                                        if (isSearching) Res.string.empty_search_results else Res.string.empty_feed
+                                        if (isSearching) Res.string.empty_search_results else Res.string.empty_feed,
                                     ),
                                 )
                                 return@PullToRefreshBox
@@ -221,6 +222,7 @@ fun FeedListScreen(
                                 }
                             }
                         }
+
                         is FeedUiState.Error -> {
                             ErrorState(
                                 message = feedErrorMessage(state),

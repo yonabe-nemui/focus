@@ -4,18 +4,13 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 
 @Composable
-actual fun MyWebView(
-    url: String,
-    modifier: Modifier,
-    onProgress: (Float) -> Unit,
-    onTitle: (String) -> Unit,
-) {
+actual fun MyWebView(url: String, modifier: Modifier, onProgress: (Float) -> Unit, onTitle: (String) -> Unit) {
     val currentOnProgress by rememberUpdatedState(onProgress)
     val currentOnTitle by rememberUpdatedState(onTitle)
 
@@ -39,6 +34,6 @@ actual fun MyWebView(
         update = { webView ->
             webView.loadUrl(url)
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }

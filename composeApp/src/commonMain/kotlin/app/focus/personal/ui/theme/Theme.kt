@@ -12,10 +12,7 @@ import app.focus.personal.model.ThemeSettings
  * - OLED ブラックはダークテーマ時のみ適用し、ダイナミックカラーとも併用できる
  */
 @Composable
-fun FocusTheme(
-    settings: ThemeSettings = ThemeSettings(),
-    content: @Composable () -> Unit,
-) {
+fun FocusTheme(settings: ThemeSettings = ThemeSettings(), content: @Composable () -> Unit) {
     val darkTheme = when (settings.mode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
@@ -32,8 +29,8 @@ fun FocusTheme(
     }
     MaterialTheme(
         colorScheme = colorScheme,
-        typography  = focusTypography(),
-        shapes      = FocusShapeScheme,
-        content     = content,
+        typography = focusTypography(),
+        shapes = FocusShapeScheme,
+        content = content,
     )
 }

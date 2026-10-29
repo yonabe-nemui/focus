@@ -26,13 +26,7 @@ import coil3.compose.AsyncImage
  * PostDetailScreen で使う。
  */
 @Composable
-fun ArticleHeader(
-    authorName: String,
-    authorAvatarUrl: String?,
-    pubDate: String?,
-    avatarSize: Dp = 36.dp,
-    modifier: Modifier = Modifier
-) {
+fun ArticleHeader(authorName: String, authorAvatarUrl: String?, pubDate: String?, avatarSize: Dp = 36.dp, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,

@@ -11,6 +11,8 @@ import io.ktor.client.engine.darwin.Darwin
 import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
 
+// Swift 側(ContentView.swift)から呼ぶ UIViewController のファクトリ。名前は Swift 側と合わせる
+@Suppress("ktlint:standard:function-naming")
 fun MainViewController() = ComposeUIViewController {
     remember { Napier.base(DebugAntilog()) }
     val scope = rememberCoroutineScope()
@@ -26,9 +28,9 @@ fun MainViewController() = ComposeUIViewController {
                 UIApplication.sharedApplication.openURL(
                     nsUrl,
                     options = emptyMap<Any?, Any?>(),
-                    completionHandler = null
+                    completionHandler = null,
                 )
             }
-        }
+        },
     )
 }

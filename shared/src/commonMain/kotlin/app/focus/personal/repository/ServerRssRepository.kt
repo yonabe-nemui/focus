@@ -9,14 +9,10 @@ import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.FocusApiClient
 
 /** フィード取得を自前 Ktor サーバー経由で行う Repository(Android で使用)。 */
-class ServerRssRepository(
-    database: FocusDatabase?,
-    private val apiClient: FocusApiClient,
-    blueskyApi: BlueskyClient,
-) : BaseFeedRepository(database, blueskyApi) {
+class ServerRssRepository(database: FocusDatabase?, private val apiClient: FocusApiClient, blueskyApi: BlueskyClient) :
+    BaseFeedRepository(database, blueskyApi) {
 
-    override suspend fun fetchAllGoogleTopics(): List<RssItem> =
-        muteWordStore.filter(apiClient.fetchGoogleFeed())
+    override suspend fun fetchAllGoogleTopics(): List<RssItem> = muteWordStore.filter(apiClient.fetchGoogleFeed())
 
     override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse {
         val page = apiClient.fetchBlueskyPage(session?.accessJwt, query, cursor)

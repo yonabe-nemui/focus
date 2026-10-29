@@ -11,9 +11,4 @@ import androidx.compose.ui.Modifier
  * @param onTitle 読み込んだページのタイトル。取得できないプラットフォームでは呼ばれない。
  */
 @Composable
-expect fun MyWebView(
-    url: String,
-    modifier: Modifier = Modifier,
-    onProgress: (Float) -> Unit = {},
-    onTitle: (String) -> Unit = {},
-)
+expect fun MyWebView(url: String, modifier: Modifier = Modifier, onProgress: (Float) -> Unit = {}, onTitle: (String) -> Unit = {})

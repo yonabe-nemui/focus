@@ -19,7 +19,7 @@ fun main() {
             viewModel = viewModel,
             onLinkClick = { url ->
                 window.open(url, "_blank")
-            }
+            },
         )
     }
 }
