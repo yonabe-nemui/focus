@@ -43,8 +43,6 @@ data class RssItem(
     @XmlElement(true)
     val guid: String? = null,
     @XmlElement(false)
-    val bookmarkCount: Int? = null,
-    @XmlElement(false)
     val authorName: String? = null,
     @XmlElement(false)
     val authorAvatarUrl: String? = null,

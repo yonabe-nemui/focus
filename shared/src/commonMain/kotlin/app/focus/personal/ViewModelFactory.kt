@@ -4,7 +4,6 @@ import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.FocusApiClient
 import app.focus.personal.network.GoogleRssClient
-import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.MisskeyClient
 import app.focus.personal.repository.FeedRepository
 import app.focus.personal.repository.RssRepository
@@ -45,7 +44,6 @@ fun createFeedViewModel(
         RssRepository(
             database = database,
             googleApi = GoogleRssClient(client),
-            hatenaApi = HatenaRssClient(client),
             blueskyApi = BlueskyClient(client),
             misskeyApi = MisskeyClient(client),
         )

@@ -10,7 +10,6 @@
 
     <!-- ソース -->
     <string name="source_google">Google</string>
-    <string name="source_hatena">はてな</string>
     <string name="source_bluesky">BlueSky</string>
     <string name="source_misskey">Misskey</string>
 
@@ -34,7 +33,6 @@
     <string name="error_retry_button">再試行</string>
     <string name="empty_search_results">検索結果がありません</string>
     <string name="empty_feed">表示できる記事がありません</string>
-    <string name="hatena_user_count">%1$d users</string>
 
     <!-- 相対時刻 -->
     <string name="time_just_now">たった今</string>

@@ -6,7 +6,6 @@ import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.BlueSkyFeedRequest
 import app.focus.personal.network.FOCUS_API_KEY_HEADER
 import app.focus.personal.network.GoogleRssClient
-import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.MisskeyClient
 import app.focus.personal.network.MisskeyFeedRequest
 import app.focus.personal.repository.RssRepository
@@ -69,7 +68,6 @@ fun Application.module(
     val repository = RssRepository(
         database = null,
         googleApi = GoogleRssClient(httpClient),
-        hatenaApi = HatenaRssClient(httpClient),
         blueskyApi = BlueskyClient(httpClient),
         misskeyApi = MisskeyClient(httpClient)
     )
@@ -81,9 +79,6 @@ fun Application.module(
         route("/api") {
             get("/feed/google") {
                 call.respond(repository.fetchAllGoogleTopics())
-            }
-            get("/feed/hatena") {
-                call.respond(repository.fetchAllHatenaEntries())
             }
             post("/feed/bluesky") {
                 try {

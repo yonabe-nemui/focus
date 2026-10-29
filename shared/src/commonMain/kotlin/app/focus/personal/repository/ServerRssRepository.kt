@@ -21,9 +21,6 @@ class ServerRssRepository(
     override suspend fun fetchAllGoogleTopics(): List<RssItem> =
         muteWordStore.filter(apiClient.fetchGoogleFeed())
 
-    override suspend fun fetchAllHatenaEntries(): List<RssItem> =
-        muteWordStore.filter(apiClient.fetchHatenaFeed())
-
     override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse {
         val page = apiClient.fetchBlueskyPage(session?.accessJwt, query, cursor)
         return PagedFeedResponse(muteWordStore.filter(page.items), page.nextCursor)

@@ -7,7 +7,6 @@ import app.focus.personal.model.RssItem
 
 interface FeedRepository {
     suspend fun fetchAllGoogleTopics(): List<RssItem>
-    suspend fun fetchAllHatenaEntries(): List<RssItem>
     suspend fun fetchBlueskyPage(query: String, session: BlueskySession? = null, cursor: String? = null): PagedFeedResponse
     suspend fun loginBluesky(handle: String, appPassword: String, authCode: String? = null): BlueskySession
     fun getSavedBlueskySession(): BlueskySession?

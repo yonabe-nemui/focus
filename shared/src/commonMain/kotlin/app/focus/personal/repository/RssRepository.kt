@@ -3,7 +3,6 @@ package app.focus.personal.repository
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.model.BlueskyPost
 import app.focus.personal.model.BlueskySession
-import app.focus.personal.model.HatenaItem
 import app.focus.personal.model.MisskeySettings
 import app.focus.personal.model.MutedWord
 import app.focus.personal.model.PagedFeedResponse
@@ -11,7 +10,6 @@ import app.focus.personal.model.RssItem
 import app.focus.personal.model.toRssItem
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
-import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.MisskeyClient
 import app.focus.personal.util.DateUtils
 import io.github.aakira.napier.Napier
@@ -24,7 +22,6 @@ import kotlin.time.ExperimentalTime
 class RssRepository(
     private val database: FocusDatabase?,
     private val googleApi: GoogleRssClient,
-    private val hatenaApi: HatenaRssClient,
     private val blueskyApi: BlueskyClient,
     private val misskeyApi: MisskeyClient
 ) : FeedRepository {
@@ -67,13 +64,6 @@ class RssRepository(
         emptyList()
     }
 
-    private suspend fun fetchHatenaSafe(label: String, block: suspend () -> List<HatenaItem>): List<HatenaItem> = try {
-        block()
-    } catch (e: Exception) {
-        Napier.w("Hatena $label fetch failed: ${e.message}")
-        emptyList()
-    }
-
     override suspend fun fetchAllGoogleTopics(): List<RssItem> = coroutineScope {
         val deferredTop = async { fetchGoogleTopicSafe("top") { googleApi.fetchTopStories().channel.items } }
         val deferredOthers = googleTopics.map { topic ->
@@ -84,19 +74,6 @@ class RssRepository(
             .flatten()
             .map { it.copy(pubDateMillis = DateUtils.parseRfc822ToMillis(it.pubDate)) }
             .distinctBy { it.guid ?: it.link }
-            .sortedByDescending { it.pubDateMillis }
-            .applyLocalMuteWords()
-    }
-
-    override suspend fun fetchAllHatenaEntries(): List<RssItem> = coroutineScope {
-        val deferredHot = async { fetchHatenaSafe("hot") { hatenaApi.fetchHotEntry().items } }
-        val deferredNew = async { fetchHatenaSafe("new") { hatenaApi.fetchEntryList().items } }
-        val deferredIt = async { fetchHatenaSafe("it") { hatenaApi.fetchItHotEntry().items } }
-
-        awaitAll(deferredHot, deferredNew, deferredIt)
-            .flatten()
-            .distinctBy { it.link }
-            .map { it.toRssItem() }
             .sortedByDescending { it.pubDateMillis }
             .applyLocalMuteWords()
     }

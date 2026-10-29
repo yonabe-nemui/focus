@@ -4,7 +4,6 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import app.focus.personal.db.FocusDatabase
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.GoogleRssClient
-import app.focus.personal.network.HatenaRssClient
 import app.focus.personal.network.MisskeyClient
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -59,7 +58,6 @@ class RssRepositoryTest {
         return RssRepository(
             database = database,
             googleApi = GoogleRssClient(client),
-            hatenaApi = HatenaRssClient(client),
             blueskyApi = BlueskyClient(client),
             misskeyApi = MisskeyClient(client)
         )

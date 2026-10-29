@@ -37,9 +37,6 @@ class FocusApiClient(
     suspend fun fetchGoogleFeed(): List<RssItem> =
         client.get("$baseUrl/api/feed/google") { applyApiKey() }.body()
 
-    suspend fun fetchHatenaFeed(): List<RssItem> =
-        client.get("$baseUrl/api/feed/hatena") { applyApiKey() }.body()
-
     suspend fun fetchBlueskyPage(accessJwt: String?, query: String, cursor: String?): PagedFeedResponse {
         val response: HttpResponse = client.post("$baseUrl/api/feed/bluesky") {
             applyApiKey()

@@ -31,7 +31,7 @@ sealed class FeedUiState {
     ) : FeedUiState()
 }
 
-enum class FeedSource { GOOGLE, HATENA, BLUESKY, MISSKEY }
+enum class FeedSource { GOOGLE, BLUESKY, MISSKEY }
 
 class FeedViewModel(
     private val repository: FeedRepository,
@@ -209,7 +209,6 @@ class FeedViewModel(
     // モバイル単一カラム・デスクトップマルチカラムの両方から使う。
     private suspend fun fetchFirstPage(source: FeedSource): List<RssItem> = when (source) {
         FeedSource.GOOGLE -> repository.fetchAllGoogleTopics()
-        FeedSource.HATENA -> repository.fetchAllHatenaEntries()
         FeedSource.BLUESKY -> {
             val result = fetchBlueskyPageWithRetry(null)
             paginationCursor[FeedSource.BLUESKY] = result.nextCursor
@@ -254,7 +253,7 @@ class FeedViewModel(
                         newItems = repository.fetchMisskeyPage(queryOf(source), settings, untilId)
                         nextCursor = newItems.lastOrNull()?.guid
                     }
-                    FeedSource.GOOGLE, FeedSource.HATENA -> return@launch
+                    FeedSource.GOOGLE -> return@launch
                 }
 
                 if (newItems.isNotEmpty()) {

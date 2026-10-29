@@ -71,7 +71,7 @@
 - **案Aの作業内容**:
   1. `FocusDatabase.sq` に `MuteWordEntity` テーブルと CRUD クエリを追加
   2. `RssRepository` のスタブ3メソッドを DB 実装に差し替え
-  3. `fetchAllGoogleTopics` / `fetchAllHatenaEntries` / `fetchBlueskyPage` / `fetchMisskeyPage` の
+  3. `fetchAllGoogleTopics` / `fetchBlueskyPage` / `fetchMisskeyPage` の
      返却前にミュートワードフィルタを適用(既存の `matchesMutedWord` を再利用)
   4. DB スキーマ変更のため開発端末ではアプリ再インストールが必要(CLAUDE.md 記載の運用)
 
@@ -379,7 +379,6 @@ UI 全体レビュー(2026-07-15)で検出したモダナイズ候補。CLAUDE.m
   混在しているためどちらかに統一
 - **Misskey インスタンス URL 初期値**: `MisskeySettingsScreen.kt:47` の `"misskey.io"`
   ハードコードを定数化(または placeholder 表示に変更)
-- **はてなブックマーク数**: テキスト表示から小型 tonal チップ/バッジへ
 - **デスクトップ操作性**: `rememberWindowState` の永続化(ウィンドウサイズ・位置の記憶)、
   キーボードショートカット(j/k: 記事移動、r: リフレッシュ)
 - **Android predictive back**: 手書きバックスタックのため予測型戻るジェスチャーに非対応。

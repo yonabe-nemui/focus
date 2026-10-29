@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-**Focus** は Kotlin Multiplatform 製のニュース集約アプリ。Google News・はてなブックマーク・BlueSky・Misskey からコンテンツを取得する。コアコンセプトは「見たくないものは見ない」——2系統のミュートワードでクライアント側フィルタリングを行う:
+**Focus** は Kotlin Multiplatform 製のニュース集約アプリ。Google News・BlueSky・Misskey からコンテンツを取得する。コアコンセプトは「見たくないものは見ない」——2系統のミュートワードでクライアント側フィルタリングを行う:
 
 - **BlueSky 公式ミュートワード**: アカウントに設定済みのミュートワードを取得し、BlueSky フィードに適用（BlueSky API はサーバー側でミュートワードを適用しないため）
 - **ローカルミュートワード**: アプリ内設定画面で管理し、全ソースのフィードに適用。ローカル DB（`MuteWordEntity`）に永続化（DB のない Web はメモリ保持でセッション内のみ有効）
@@ -67,7 +67,6 @@ iOS: `iosApp/` を Xcode で開く。
 
 **ネットワーククライアント** (`shared/src/commonMain/kotlin/.../network/`):
 - `GoogleRssClient` — Google News RSS (XML)
-- `HatenaRssClient` — はてなブックマーク RDF/RSS（ブックマーク数含む）
 - `BlueskyClient` — BlueSky XRPC API（セッション・投稿検索・ミュートワード設定）
 - `MisskeyClient` — Misskey API（ノート検索・ホームタイムライン）
 - `FocusApiClient` — 自前 Ktor サーバーの REST API クライアント（ServerRssRepository が使用）
@@ -79,7 +78,7 @@ iOS: `iosApp/` を Xcode で開く。
 
 **DI はフレームワーク不使用** — 各エントリーポイントで手動インスタンス化する: `MainActivity.kt`（Android）・`MainViewController.kt`（iOS）・`composeApp/src/jvmMain/.../main.kt`（Desktop）・`composeApp/src/webMain/.../main.kt`（Web。DB なしで `RssRepository(null, ...)` を構築）。`DriverFactory` は `expect/actual` でプラットフォーム別 DB ドライバーを返す。
 
-**全ソースの正規化:** 各クライアントは独自モデル（`BlueskyPost`, `HatenaItem`, `MisskeyNote` 等）を `toRssItem()` で `RssItem` に変換して統一フィードとして扱う。
+**全ソースの正規化:** 各クライアントは独自モデル（`BlueskyPost`, `MisskeyNote` 等）を `toRssItem()` で `RssItem` に変換して統一フィードとして扱う。
 
 ## 実装上の注意事項
 
@@ -88,7 +87,6 @@ iOS: `iosApp/` を Xcode で開く。
 - **SQLDelight の Boolean** — ネイティブ Boolean ではなく `INTEGER`（Long）で保存（`0L`/`1L`）
 - **開発中の DB マイグレーション** — スキーマ変更時はアプリをアンインストールして DB をリセット。本番運用時は `.sqm` によるマイグレーションが必要
 - **Ktor ContentNegotiation** — 全プラットフォームで JSON 設定を適用する（シリアライズに必須）
-- **はてな User-Agent** — はてなブックマーク RSS 取得時は、将来的に適切な User-Agent の設定を推奨
 - **マルチモジュール依存** — 依存をモジュール間で公開したい場合は `api` を使う、または各モジュールで `implementation` を重複宣言する
 - **BlueSky 2FA フロー** — 2FA 有効アカウントの初回ログインは HTTP 401 (`AuthFactorTokenRequired`) が返る。トークン入力を促してリトライする
 

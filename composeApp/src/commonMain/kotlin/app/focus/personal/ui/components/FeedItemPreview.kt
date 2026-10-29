@@ -41,7 +41,6 @@ private val previewNews = RssItem(
     description = "JetBrains が発表した最新リリースでは、iOS App Store への配布フローが大幅に改善された。"
         + " Compose Multiplatform と組み合わせることで、共通 UI コードを iOS に展開できる。",
     pubDate = "2024-01-15",
-    bookmarkCount = 342,
     imageUrls = listOf("https://picsum.photos/seed/focus3/800/400"),
 )
 

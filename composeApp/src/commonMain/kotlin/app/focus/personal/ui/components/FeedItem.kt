@@ -18,7 +18,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,7 +39,6 @@ import app.focus.personal.ui.theme.FocusShape
 import app.focus.personal.ui.theme.FocusSpacing
 import focus.composeapp.generated.resources.Res
 import focus.composeapp.generated.resources.dialog_cancel
-import focus.composeapp.generated.resources.hatena_user_count
 import focus.composeapp.generated.resources.menu_add_mute_word
 import focus.composeapp.generated.resources.menu_copy_link
 import focus.composeapp.generated.resources.menu_open_in_browser
@@ -249,38 +247,14 @@ private fun NewsItem(item: RssItem) {
             Spacer(Modifier.height(FocusSpacing.sm))
             FeedImageGallery(imageUrls = imageUrls, imageAlts = item.imageAlts)
         }
-        // メタ情報行（日時・ブックマーク数）
-        if (item.pubDate != null || item.bookmarkCount != null) {
+        // メタ情報行（日時）
+        relativeTimeLabel(item.pubDateMillis, item.pubDate)?.let { date ->
             Spacer(Modifier.height(FocusSpacing.xs))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(FocusSpacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                relativeTimeLabel(item.pubDateMillis, item.pubDate)?.let { date ->
-                    Text(
-                        text = date,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                item.bookmarkCount?.let { count ->
-                    // ブックマーク数は小型の tonal チップで表示
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        shape = RoundedCornerShape(percent = 50),
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.hatena_user_count, count),
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(
-                                horizontal = FocusSpacing.sm,
-                                vertical = FocusSpacing.xxs,
-                            ),
-                        )
-                    }
-                }
-            }
+            Text(
+                text = date,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
