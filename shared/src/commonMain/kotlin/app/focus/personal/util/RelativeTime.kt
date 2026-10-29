@@ -1,6 +1,7 @@
 package app.focus.personal.util
 
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -51,8 +52,8 @@ sealed class RelativeTime {
                     val nowYear = Instant.fromEpochMilliseconds(nowMillis).toLocalDateTime(timeZone).date.year
                     AbsoluteDate(
                         year = date.year,
-                        month = date.monthNumber,
-                        day = date.dayOfMonth,
+                        month = date.month.number,
+                        day = date.day,
                         withYear = date.year != nowYear,
                     )
                 }

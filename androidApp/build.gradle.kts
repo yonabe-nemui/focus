@@ -1,8 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.composeCompiler)
 }
 
@@ -59,25 +56,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
-    sourceSets {
-        getByName("main") {
-            java.setSrcDirs(listOf("src/main/kotlin"))
-        }
-        // デバッグメニュー(接続先切り替え)はビルドタイプ別ソースセットで出し分ける
-        getByName("debug") {
-            java.setSrcDirs(listOf("src/debug/kotlin"))
-        }
-        getByName("release") {
-            java.setSrcDirs(listOf("src/release/kotlin"))
-        }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
-    }
+    // デバッグメニュー(接続先切り替え)はビルドタイプ別ソースセット(src/debug/kotlin・src/release/kotlin)で出し分ける。
+    // built-in Kotlin は src/<sourceSet>/kotlin を既定で参照するため sourceSets の指定は不要
+    // Kotlin の jvmTarget は built-in Kotlin では targetCompatibility に揃う
 }
 
 dependencies {
@@ -85,9 +66,6 @@ dependencies {
     implementation(projects.shared)
     implementation(libs.androidx.activity.compose)
     implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
-    implementation(libs.kotlinx.serialization.json)
     implementation(libs.napier)
     debugImplementation(libs.compose.uiTooling)
     // デバッグメニュー UI 用(release には含めない)

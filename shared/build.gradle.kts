@@ -9,7 +9,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "app.focus.personal.shared"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -36,7 +36,6 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.serialization.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
             implementation(libs.xmlutil.serialization)
@@ -47,35 +46,26 @@ kotlin {
             api(libs.napier)
         }
         androidMain.dependencies {
-
-            implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android.driver)
         }
         iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
             implementation(libs.sqldelight.native.driver)
         }
-        val jvmMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.sqlite.driver)
-            }
+        jvmMain.dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
         }
-        val jsMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.web.worker.driver)
-            }
+        jsMain.dependencies {
+            implementation(libs.sqldelight.web.worker.driver)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
         }
-        val jvmTest by getting {
-            dependencies {
-                implementation(libs.sqldelight.sqlite.driver)
-            }
+        jvmTest.dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
         }
-}
+    }
 }
 
 sqldelight {

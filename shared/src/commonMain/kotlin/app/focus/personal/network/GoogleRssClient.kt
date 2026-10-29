@@ -5,12 +5,11 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import nl.adaptivity.xmlutil.serialization.XML
-import nl.adaptivity.xmlutil.serialization.DefaultXmlSerializationPolicy
 
 class GoogleRssClient(private val client: HttpClient) {
-    private val xml = XML {
-        autoPolymorphic = true
-        policy = DefaultXmlSerializationPolicy {
+    // XML.v1 は autoPolymorphic が既定で有効
+    private val xml = XML.v1 {
+        policy {
             ignoreUnknownChildren()
         }
     }
