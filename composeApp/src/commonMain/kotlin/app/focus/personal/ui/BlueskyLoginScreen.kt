@@ -55,7 +55,6 @@ import focus.composeapp.generated.resources.bluesky_login_button
 import focus.composeapp.generated.resources.bluesky_login_description
 import focus.composeapp.generated.resources.bluesky_login_title
 import focus.composeapp.generated.resources.bluesky_password_label
-import focus.composeapp.generated.resources.bluesky_rate_limit_error
 import focus.composeapp.generated.resources.bluesky_verify_button
 import org.jetbrains.compose.resources.stringResource
 

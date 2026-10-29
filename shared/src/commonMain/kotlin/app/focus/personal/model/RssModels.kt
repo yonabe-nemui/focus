@@ -4,27 +4,17 @@ import kotlinx.serialization.Serializable
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
 
+// RSS 2.0 のうちアプリで使う項目だけを定義する(未知の要素・属性は無視してパース)
+
 @Serializable
 @XmlSerialName("rss", "", "")
 data class RssFeed(
-    @XmlSerialName("version", "", "")
-    val version: String = "2.0",
     val channel: RssChannel = RssChannel()
 )
 
 @Serializable
 @XmlSerialName("channel", "", "")
 data class RssChannel(
-    @XmlElement(true)
-    val title: String = "",
-    @XmlElement(true)
-    val link: String = "",
-    @XmlElement(true)
-    val description: String? = null,
-    @XmlElement(true)
-    val language: String? = null,
-    @XmlElement(true)
-    val pubDate: String? = null,
     @XmlSerialName("item", "", "")
     val items: List<RssItem> = emptyList()
 )

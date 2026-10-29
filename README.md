@@ -45,7 +45,7 @@
 macOS / Linux では `.\gradlew.bat` を `./gradlew` に読み替えてください。
 iOS は `iosApp/` を Xcode で開いて実行します。
 
-※ wasmJs ターゲットは SQLDelight が未対応のため現在無効化しています(Web は JS のみ)。
+※ wasmJs ターゲットは使っていません(Web は JS のみ)。
 
 ## テスト
 

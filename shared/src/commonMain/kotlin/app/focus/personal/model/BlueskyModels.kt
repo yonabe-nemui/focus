@@ -1,6 +1,9 @@
 package app.focus.personal.model
 
+import app.focus.personal.util.DateUtils
 import kotlinx.serialization.Serializable
+
+// BlueSky XRPC API のレスポンスのうち、アプリで使う項目だけを定義する(未知のキーは無視してデコード)
 
 @Serializable
 data class BlueskySession(
@@ -8,12 +11,6 @@ data class BlueskySession(
     val refreshJwt: String,
     val handle: String,
     val did: String
-)
-
-@Serializable
-data class MutedWord(
-    val value: String,
-    val targets: List<String> = listOf("content")
 )
 
 @Serializable
@@ -36,12 +33,9 @@ data class BlueskyFeedViewPost(
 @Serializable
 data class BlueskyPost(
     val uri: String,
-    val cid: String,
     val author: BlueskyProfile,
     val record: BlueskyRecord,
     val embed: BlueskyEmbed? = null,
-    val likeCount: Int = 0,
-    val repostCount: Int = 0
 )
 
 @Serializable
@@ -68,23 +62,23 @@ data class BlueskyProfile(
 data class BlueskyRecord(
     val text: String = "",
     val createdAt: String = "",
-    val langs: List<String> = emptyList()
 )
 
 fun BlueskyPost.toRssItem(): RssItem {
     val images = embed?.images?.takeIf { it.isNotEmpty() }
+    val name = author.displayName ?: author.handle
     return RssItem(
-        title = author.displayName ?: author.handle,
-        link = "https://bsky.app/profile/${author.did}/post/${uri.split("/").last()}",
+        title = name,
+        link = "https://bsky.app/profile/${author.did}/post/${uri.substringAfterLast("/")}",
         description = record.text,
         pubDate = record.createdAt,
         guid = uri,
-        authorName = author.displayName ?: author.handle,
+        authorName = name,
         authorAvatarUrl = author.avatar,
         imageUrls = images?.map { it.thumb },
         imageFullUrls = images?.map { it.fullsize },
         imageAlts = images?.map { it.alt },
-        pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(record.createdAt),
+        pubDateMillis = DateUtils.parseIso8601ToMillis(record.createdAt),
         kind = ItemKind.SNS_POST,
     )
 }

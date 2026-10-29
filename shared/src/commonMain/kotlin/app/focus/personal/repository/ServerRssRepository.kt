@@ -8,15 +8,12 @@ import app.focus.personal.model.RssItem
 import app.focus.personal.network.BlueskyClient
 import app.focus.personal.network.FocusApiClient
 
+/** フィード取得を自前 Ktor サーバー経由で行う Repository(Android で使用)。 */
 class ServerRssRepository(
     database: FocusDatabase?,
     private val apiClient: FocusApiClient,
-    private val blueskyApi: BlueskyClient
-) : FeedRepository {
-
-    private val sessionStore = SessionStore(database)
-    private val muteWordStore = MuteWordStore(database)
-    private val preferenceStore = PreferenceStore(database)
+    blueskyApi: BlueskyClient,
+) : BaseFeedRepository(database, blueskyApi) {
 
     override suspend fun fetchAllGoogleTopics(): List<RssItem> =
         muteWordStore.filter(apiClient.fetchGoogleFeed())
@@ -26,48 +23,6 @@ class ServerRssRepository(
         return PagedFeedResponse(muteWordStore.filter(page.items), page.nextCursor)
     }
 
-    override suspend fun loginBluesky(
-        handle: String,
-        appPassword: String,
-        authCode: String?
-    ): BlueskySession {
-        val session = blueskyApi.createSession(handle, appPassword, authCode)
-        saveBlueskySession(session)
-        return session
-    }
-
-    override fun getSavedBlueskySession(): BlueskySession? = sessionStore.getBlueskySession()
-
-    override fun saveBlueskySession(session: BlueskySession) = sessionStore.saveBlueskySession(session)
-
-    override fun clearBlueskySession() = sessionStore.clearBlueskySession()
-
-    override suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession {
-        val session = blueskyApi.refreshSession(refreshJwt)
-        saveBlueskySession(session)
-        return session
-    }
-
-    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> =
-        fetchMisskeyPage(query, settings, null)
-
     override suspend fun fetchMisskeyPage(query: String, settings: MisskeySettings, untilId: String?): List<RssItem> =
         muteWordStore.filter(apiClient.fetchMisskeyPage(settings.instanceUrl, settings.apiToken, query, untilId))
-
-    override fun getSavedMisskeySettings(): MisskeySettings? = sessionStore.getMisskeySettings()
-
-    override fun saveMisskeySettings(settings: MisskeySettings) = sessionStore.saveMisskeySettings(settings)
-
-    override fun clearMisskeySettings() = sessionStore.clearMisskeySettings()
-
-    // ローカルミュートワードは他プラットフォームと同様にクライアント側で管理・適用する
-    override suspend fun fetchMuteWords(): List<String> = muteWordStore.getAll()
-
-    override suspend fun addMuteWord(word: String) = muteWordStore.add(word)
-
-    override suspend fun deleteMuteWord(word: String) = muteWordStore.delete(word)
-
-    override fun getPreference(key: String): String? = preferenceStore.get(key)
-
-    override fun setPreference(key: String, value: String) = preferenceStore.put(key, value)
 }

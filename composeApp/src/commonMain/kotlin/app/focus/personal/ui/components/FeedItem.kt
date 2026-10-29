@@ -259,7 +259,7 @@ private fun NewsItem(item: RssItem) {
     }
 }
 
-/** 1 枚: フル幅 180dp / 複数: 横スクロールギャラリー。角丸は imageCornerDetail (12dp)。 */
+/** 1 枚: フル幅 180dp / 複数: 2×2 グリッド(最大 4 枚)。 */
 @Composable
 private fun FeedImageGallery(
     imageUrls: List<String>,

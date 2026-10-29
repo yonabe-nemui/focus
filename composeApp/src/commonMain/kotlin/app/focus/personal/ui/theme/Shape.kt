@@ -13,10 +13,7 @@ internal val FocusShapeScheme = Shapes(
     extraLarge = RoundedCornerShape(28.dp),
 )
 
-// 画面コンポーネントから直接参照できる定数（MaterialTheme.shapes を使えない場面向け）
+// 画面コンポーネントから直接参照する角丸（MaterialTheme.shapes を使えない場面向け）
 object FocusShape {
-    val imageCorner        = 8.dp   // フィード内サムネイル
-    val imageCornerDetail  = 12.dp  // 詳細画面フル画像
-    val avatar             = 999.dp // 円形アバター（CircleShape 相当）
-    val chip               = 4.dp   // タグ / バッジ
+    val imageCornerDetail = 12.dp  // フィード・詳細画面の画像
 }

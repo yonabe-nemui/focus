@@ -14,7 +14,6 @@ interface FeedRepository {
     fun clearBlueskySession()
     suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession
 
-    suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem>
     suspend fun fetchMisskeyPage(query: String, settings: MisskeySettings, untilId: String? = null): List<RssItem>
     fun getSavedMisskeySettings(): MisskeySettings?
     fun saveMisskeySettings(settings: MisskeySettings)

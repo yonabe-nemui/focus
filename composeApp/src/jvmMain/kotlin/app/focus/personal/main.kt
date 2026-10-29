@@ -80,13 +80,14 @@ fun main() = application {
             }
         },
     ) {
-        DesktopApp(
+        App(
             viewModel = viewModel,
             onLinkClick = { url ->
                 if (Desktop.isDesktopSupported()) {
                     Desktop.getDesktop().browse(URI(url))
                 }
-            }
+            },
+            isDesktop = true,
         )
     }
 }

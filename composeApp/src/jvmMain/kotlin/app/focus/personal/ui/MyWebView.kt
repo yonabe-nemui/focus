@@ -1,14 +1,10 @@
 package app.focus.personal.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import java.awt.Desktop
-import java.net.URI
 
+// Desktop は記事を外部ブラウザで開く(App の isDesktop)ため、WebView 画面には遷移しない
 @Composable
 actual fun MyWebView(
     url: String,
@@ -16,14 +12,5 @@ actual fun MyWebView(
     onProgress: (Float) -> Unit,
     onTitle: (String) -> Unit,
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Text("Opening in external browser...")
-    }
-
-    LaunchedEffect(url) {
-        if (Desktop.isDesktopSupported()) {
-            Desktop.getDesktop().browse(URI(url))
-        }
-        onProgress(1f)
-    }
+    Box(modifier = modifier)
 }

@@ -31,7 +31,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 iOS: `iosApp/` を Xcode で開く。
 
-**注意**: wasmJs ターゲットは SQLDelight が未対応のため無効化されている（`shared/build.gradle.kts`・`composeApp/build.gradle.kts` でコメントアウト中）。Web は JS ターゲットのみ。
+**注意**: wasmJs ターゲットは使っていない（導入時点で SQLDelight が未対応だったため）。Web は JS ターゲットのみ。
 
 ## テスト実行
 
@@ -76,7 +76,7 @@ iOS: `iosApp/` を Xcode で開く。
 - iOS: Darwin
 - Web: デフォルト JS エンジン
 
-**DI はフレームワーク不使用** — 各エントリーポイントで手動インスタンス化する: `MainActivity.kt`（Android）・`MainViewController.kt`（iOS）・`composeApp/src/jvmMain/.../main.kt`（Desktop）・`composeApp/src/webMain/.../main.kt`（Web。DB なしで `RssRepository(null, ...)` を構築）。`DriverFactory` は `expect/actual` でプラットフォーム別 DB ドライバーを返す。
+**DI はフレームワーク不使用** — 各エントリーポイント（`MainActivity.kt`（Android）・`MainViewController.kt`（iOS）・`composeApp/src/jvmMain/.../main.kt`（Desktop）・`composeApp/src/webMain/.../main.kt`（Web））が shared の `createFeedViewModel()` に DB・HTTP エンジン・接続先を渡して組み立てる。Web は DB なし。`DriverFactory` は `expect/actual` でプラットフォーム別 DB ドライバーを返す。UI のルートは全プラットフォーム共通の `App`（Desktop は `isDesktop = true` で常時マルチカラム・記事は外部ブラウザ）。
 
 **全ソースの正規化:** 各クライアントは独自モデル（`BlueskyPost`, `MisskeyNote` 等）を `toRssItem()` で `RssItem` に変換して統一フィードとして扱う。
 

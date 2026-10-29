@@ -23,7 +23,7 @@ import coil3.compose.AsyncImage
 
 /**
  * Avatar + 著者名 + 日付 の共通ヘッダー行。
- * FeedItem（36dp）と PostDetailScreen（48dp）で avatarSize を切り替えて使う。
+ * PostDetailScreen で使う。
  */
 @Composable
 fun ArticleHeader(
@@ -77,7 +77,7 @@ internal fun AuthorAvatar(name: String, avatarUrl: String?, size: Dp) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = name.first().uppercaseChar().toString(),
+                text = name.firstOrNull()?.uppercaseChar()?.toString().orEmpty(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )

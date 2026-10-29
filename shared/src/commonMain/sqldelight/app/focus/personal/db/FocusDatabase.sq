@@ -3,7 +3,7 @@ CREATE TABLE BlueskySessionEntity (
     accessJwt TEXT NOT NULL,
     refreshJwt TEXT NOT NULL,
     did TEXT NOT NULL,
-    isActive INTEGER NOT NULL DEFAULT 0 -- 0 for false, 1 for true
+    isActive INTEGER NOT NULL DEFAULT 0 -- 0: false, 1: true
 );
 
 CREATE TABLE MisskeySettingsEntity (
@@ -33,9 +33,6 @@ SELECT * FROM BlueskySessionEntity WHERE isActive = 1 LIMIT 1;
 
 clearActiveBlueskySession:
 UPDATE BlueskySessionEntity SET isActive = 0;
-
-deleteBlueskySession:
-DELETE FROM BlueskySessionEntity WHERE handle = ?;
 
 -- Misskey Settings Queries
 upsertMisskeySettings:

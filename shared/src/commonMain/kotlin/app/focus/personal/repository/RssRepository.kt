@@ -4,7 +4,6 @@ import app.focus.personal.db.FocusDatabase
 import app.focus.personal.model.BlueskyPost
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.MisskeySettings
-import app.focus.personal.model.MutedWord
 import app.focus.personal.model.PagedFeedResponse
 import app.focus.personal.model.RssItem
 import app.focus.personal.model.toRssItem
@@ -17,30 +16,26 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
+/** 各ソースへ直接アクセスする Repository(iOS・Desktop・Web・サーバーで使用)。 */
 class RssRepository(
-    private val database: FocusDatabase?,
+    database: FocusDatabase?,
     private val googleApi: GoogleRssClient,
-    private val blueskyApi: BlueskyClient,
-    private val misskeyApi: MisskeyClient
-) : FeedRepository {
-    private val sessionStore = SessionStore(database)
-    private val muteWordStore = MuteWordStore(database)
-    private val preferenceStore = PreferenceStore(database)
+    blueskyApi: BlueskyClient,
+    private val misskeyApi: MisskeyClient,
+) : BaseFeedRepository(database, blueskyApi) {
 
     private val googleTopics = listOf(
         "WORLD", "NATION", "BUSINESS", "TECHNOLOGY",
         "ENTERTAINMENT", "SPORTS", "SCIENCE", "HEALTH"
     )
 
-    // BlueSky ミュートワードのキャッシュ（セッション DID をキー、5 分 TTL）
-    private var mutedWordsCache: Pair<String, List<MutedWord>>? = null
+    // BlueSky 公式ミュートワードのキャッシュ（セッション DID をキー、5 分 TTL）
+    private var mutedWordsCache: Pair<String, List<String>>? = null
     private var mutedWordsCacheAt: Long = 0L
     private val mutedWordsCacheTtlMs = 5 * 60 * 1000L
 
-    @OptIn(ExperimentalTime::class)
-    private suspend fun getCachedMutedWords(session: BlueskySession): List<MutedWord> {
+    private suspend fun getCachedMutedWords(session: BlueskySession): List<String> {
         val now = Clock.System.now().toEpochMilliseconds()
         val cached = mutedWordsCache
         if (cached != null && cached.first == session.did && now - mutedWordsCacheAt < mutedWordsCacheTtlMs) {
@@ -57,17 +52,18 @@ class RssRepository(
         }
     }
 
-    private suspend fun fetchGoogleTopicSafe(label: String, block: suspend () -> List<RssItem>): List<RssItem> = try {
+    /** 失敗したソースは空リストとして扱い、他のソースの結果は返す。 */
+    private suspend fun <T> fetchSafe(label: String, block: suspend () -> List<T>): List<T> = try {
         block()
     } catch (e: Exception) {
-        Napier.w("Google $label fetch failed: ${e.message}")
+        Napier.w("$label fetch failed: ${e.message}")
         emptyList()
     }
 
     override suspend fun fetchAllGoogleTopics(): List<RssItem> = coroutineScope {
-        val deferredTop = async { fetchGoogleTopicSafe("top") { googleApi.fetchTopStories().channel.items } }
+        val deferredTop = async { fetchSafe("Google top") { googleApi.fetchTopStories().channel.items } }
         val deferredOthers = googleTopics.map { topic ->
-            async { fetchGoogleTopicSafe(topic) { googleApi.fetchTopicRss(topic).channel.items } }
+            async { fetchSafe("Google $topic") { googleApi.fetchTopicRss(topic).channel.items } }
         }
 
         (listOf(deferredTop) + deferredOthers).awaitAll()
@@ -75,33 +71,13 @@ class RssRepository(
             .map { it.copy(pubDateMillis = DateUtils.parseRfc822ToMillis(it.pubDate)) }
             .distinctBy { it.guid ?: it.link }
             .sortedByDescending { it.pubDateMillis }
-            .applyLocalMuteWords()
+            .let(muteWordStore::filter)
     }
-
-    override suspend fun loginBluesky(
-        handle: String,
-        appPassword: String,
-        authCode: String?
-    ): BlueskySession {
-        val session = blueskyApi.createSession(handle, appPassword, authCode)
-        saveBlueskySession(session)
-        return session
-    }
-
-    override fun getSavedBlueskySession(): BlueskySession? = sessionStore.getBlueskySession()
-
-    override fun saveBlueskySession(session: BlueskySession) = sessionStore.saveBlueskySession(session)
 
     override fun clearBlueskySession() {
-        sessionStore.clearBlueskySession()
+        super.clearBlueskySession()
         mutedWordsCache = null
         mutedWordsCacheAt = 0L
-    }
-
-    override suspend fun refreshBlueskySession(refreshJwt: String): BlueskySession {
-        val session = blueskyApi.refreshSession(refreshJwt)
-        saveBlueskySession(session)
-        return session
     }
 
     override suspend fun fetchBlueskyPage(query: String, session: BlueskySession?, cursor: String?): PagedFeedResponse {
@@ -123,61 +99,26 @@ class RssRepository(
         }
 
         val items = posts
-            .filter { post ->
-                val text = post.record.text
-                mutedWords.none { MuteWordStore.matchesMutedWord(text, it.value) }
-            }
+            .filter { post -> mutedWords.none { MuteWordStore.matchesMutedWord(post.record.text, it) } }
             .map { it.toRssItem() }
             .sortedByDescending { it.pubDateMillis }
-            .applyLocalMuteWords()
+            .let(muteWordStore::filter)
 
         return PagedFeedResponse(items, nextCursor)
     }
-
-    override suspend fun fetchMisskeyEntries(query: String, settings: MisskeySettings): List<RssItem> =
-        fetchMisskeyPage(query, settings, null)
 
     override suspend fun fetchMisskeyPage(query: String, settings: MisskeySettings, untilId: String?): List<RssItem> {
         val token = settings.apiToken
         val notes = when {
             token != null && query.isEmpty() ->
-                fetchMisskeySafe("home") { misskeyApi.getHomeTimeline(settings.instanceUrl, token, untilId = untilId) }
-            token != null && query.isNotEmpty() ->
-                fetchMisskeySafe("search-auth") { misskeyApi.searchNotes(settings.instanceUrl, query, token = token, untilId = untilId) }
+                fetchSafe("Misskey home") { misskeyApi.getHomeTimeline(settings.instanceUrl, token, untilId = untilId) }
             query.isNotEmpty() ->
-                fetchMisskeySafe("search") { misskeyApi.searchNotes(settings.instanceUrl, query, untilId = untilId) }
+                fetchSafe("Misskey search") { misskeyApi.searchNotes(settings.instanceUrl, query, token = token, untilId = untilId) }
             else -> emptyList()
         }
         return notes
             .map { it.toRssItem(settings.instanceUrl) }
             .sortedByDescending { it.pubDateMillis }
-            .applyLocalMuteWords()
+            .let(muteWordStore::filter)
     }
-
-    private suspend fun <T> fetchMisskeySafe(label: String, block: suspend () -> List<T>): List<T> = try {
-        block()
-    } catch (e: Exception) {
-        Napier.w("Misskey $label fetch failed: ${e.message}")
-        emptyList()
-    }
-
-    override fun getSavedMisskeySettings(): MisskeySettings? = sessionStore.getMisskeySettings()
-
-    override fun saveMisskeySettings(settings: MisskeySettings) = sessionStore.saveMisskeySettings(settings)
-
-    override fun clearMisskeySettings() = sessionStore.clearMisskeySettings()
-
-    // --- ローカルミュートワード ---
-
-    override suspend fun fetchMuteWords(): List<String> = muteWordStore.getAll()
-
-    override suspend fun addMuteWord(word: String) = muteWordStore.add(word)
-
-    override suspend fun deleteMuteWord(word: String) = muteWordStore.delete(word)
-
-    private fun List<RssItem>.applyLocalMuteWords(): List<RssItem> = muteWordStore.filter(this)
-
-    override fun getPreference(key: String): String? = preferenceStore.get(key)
-
-    override fun setPreference(key: String, value: String) = preferenceStore.put(key, value)
 }

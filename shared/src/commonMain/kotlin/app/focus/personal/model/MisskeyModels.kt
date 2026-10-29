@@ -1,6 +1,9 @@
 package app.focus.personal.model
 
+import app.focus.personal.util.DateUtils
 import kotlinx.serialization.Serializable
+
+// Misskey API のレスポンスのうち、アプリで使う項目だけを定義する(未知のキーは無視してデコード)
 
 @Serializable
 data class MisskeyNote(
@@ -10,15 +13,10 @@ data class MisskeyNote(
     val cw: String? = null,
     val user: MisskeyUser,
     val files: List<MisskeyFile> = emptyList(),
-    val renoteCount: Int = 0,
-    val repliesCount: Int = 0,
-    val tags: List<String> = emptyList(),
-    val visibility: String = "public"
 )
 
 @Serializable
 data class MisskeyFile(
-    val id: String,
     val type: String = "",
     val url: String = "",
     val thumbnailUrl: String? = null,
@@ -28,10 +26,8 @@ data class MisskeyFile(
 
 @Serializable
 data class MisskeyUser(
-    val id: String,
     val username: String,
     val name: String? = null,
-    val host: String? = null,
     val avatarUrl: String? = null
 )
 
@@ -41,31 +37,22 @@ data class MisskeySettings(
 )
 
 fun MisskeyNote.toRssItem(instanceUrl: String): RssItem {
-    val noteUrl = "https://$instanceUrl/notes/$id"
-    val displayText = if (cw != null) "[$cw]\n${text ?: ""}" else (text ?: "")
+    val displayText = if (cw != null) "[$cw]\n${text.orEmpty()}" else text.orEmpty()
+    val name = user.name ?: "@${user.username}"
     // URL が空のファイルは除外し、サムネイル・原寸・alt のインデックスを揃える
-    val imageFiles = files.filter { it.type.startsWith("image/") && it.url.isNotEmpty() }
-    val imageUrls = imageFiles
-        .map { it.thumbnailUrl?.takeIf { url -> url.isNotEmpty() } ?: it.url }
-        .takeIf { it.isNotEmpty() }
-    val imageFullUrls = imageFiles
-        .map { it.url }
-        .takeIf { it.isNotEmpty() }
-    val imageAlts = imageFiles
-        .map { it.comment.orEmpty() }
-        .takeIf { imageFiles.isNotEmpty() }
+    val imageFiles = files.filter { it.type.startsWith("image/") && it.url.isNotEmpty() }.takeIf { it.isNotEmpty() }
     return RssItem(
-        title = user.name ?: "@${user.username}",
-        link = noteUrl,
+        title = name,
+        link = "https://$instanceUrl/notes/$id",
         description = displayText,
         pubDate = createdAt,
         guid = id,
-        authorName = user.name ?: "@${user.username}",
+        authorName = name,
         authorAvatarUrl = user.avatarUrl,
-        imageUrls = imageUrls,
-        imageFullUrls = imageFullUrls,
-        imageAlts = imageAlts,
-        pubDateMillis = app.focus.personal.util.DateUtils.parseIso8601ToMillis(createdAt),
+        imageUrls = imageFiles?.map { it.thumbnailUrl?.takeIf { url -> url.isNotEmpty() } ?: it.url },
+        imageFullUrls = imageFiles?.map { it.url },
+        imageAlts = imageFiles?.map { it.comment.orEmpty() },
+        pubDateMillis = DateUtils.parseIso8601ToMillis(createdAt),
         kind = ItemKind.SNS_POST,
     )
 }

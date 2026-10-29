@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -28,12 +27,6 @@ kotlin {
         browser()
     }
 
-    // SQLDelight 2.0.x does not support WasmJs yet.
-    // @OptIn(ExperimentalWasmDsl::class)
-    // wasmJs {
-//     browser()
-    // }
-
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.serialization.json)
@@ -53,9 +46,6 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(libs.sqldelight.sqlite.driver)
-        }
-        jsMain.dependencies {
-            implementation(libs.sqldelight.web.worker.driver)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

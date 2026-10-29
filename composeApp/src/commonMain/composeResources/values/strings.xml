@@ -4,6 +4,7 @@
     <string name="app_name">Focus</string>
     <string name="screen_title_feed">News Feed</string>
     <string name="screen_title_web_content">News Content</string>
+    <string name="webview_opened_in_new_tab">新しいタブで開きました</string>
     <string name="screen_title_settings">設定</string>
     <string name="screen_title_mute_words">ローカルミュートワード</string>
     <string name="screen_title_licenses">ライセンス</string>

@@ -219,7 +219,7 @@ class FeedViewModel(
             if (settings == null) {
                 emptyList()
             } else {
-                val items = repository.fetchMisskeyEntries(queryOf(FeedSource.MISSKEY), settings)
+                val items = repository.fetchMisskeyPage(queryOf(FeedSource.MISSKEY), settings)
                 paginationCursor[FeedSource.MISSKEY] = items.lastOrNull()?.guid
                 items
             }

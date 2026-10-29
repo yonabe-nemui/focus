@@ -30,15 +30,16 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import kotlinx.serialization.json.Json
 
+private const val DEFAULT_PORT = 8080
+
 fun main() {
     // Cloud Run 等の PaaS はリッスンすべきポートを PORT 環境変数で指定してくる
-    val port = System.getenv("PORT")?.toIntOrNull() ?: SERVER_PORT
+    val port = System.getenv("PORT")?.toIntOrNull() ?: DEFAULT_PORT
     embeddedServer(Netty, port = port, host = "0.0.0.0", module = { module() })
         .start(wait = true)
 }
 
 // ミュートワードのフィルタはクライアント側（MuteWordStore）で行うため、サーバーは素通しで返す。
-
 fun Application.module(
     apiKey: String? = System.getenv("FOCUS_API_KEY")?.takeIf { it.isNotBlank() },
 ) {

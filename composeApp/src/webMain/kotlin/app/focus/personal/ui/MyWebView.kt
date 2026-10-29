@@ -6,8 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import focus.composeapp.generated.resources.Res
+import focus.composeapp.generated.resources.webview_opened_in_new_tab
 import kotlinx.browser.window
+import org.jetbrains.compose.resources.stringResource
 
+// Web は記事をブラウザの新規タブで開き、この画面には案内文だけを表示する
 @Composable
 actual fun MyWebView(
     url: String,
@@ -16,7 +20,7 @@ actual fun MyWebView(
     onTitle: (String) -> Unit,
 ) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Text("Opening in new tab...")
+        Text(stringResource(Res.string.webview_opened_in_new_tab))
     }
 
     LaunchedEffect(url) {

@@ -28,34 +28,13 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun ErrorState(
     message: String,
-    onRetry: (() -> Unit)?,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(FocusSpacing.xl),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.CloudOff,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(40.dp),
-        )
-        Spacer(Modifier.height(FocusSpacing.md))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        if (onRetry != null) {
-            Spacer(Modifier.height(FocusSpacing.lg))
-            OutlinedButton(onClick = onRetry) {
-                Text(stringResource(Res.string.error_retry_button))
-            }
+    StatusView(icon = Icons.Default.CloudOff, message = message, modifier = modifier) {
+        Spacer(Modifier.height(FocusSpacing.lg))
+        OutlinedButton(onClick = onRetry) {
+            Text(stringResource(Res.string.error_retry_button))
         }
     }
 }
@@ -66,6 +45,17 @@ fun EmptyState(
     icon: ImageVector,
     message: String,
     modifier: Modifier = Modifier,
+) {
+    StatusView(icon = icon, message = message, modifier = modifier)
+}
+
+/** 中央寄せのアイコン + 説明文。[action] はその下に並べる。 */
+@Composable
+private fun StatusView(
+    icon: ImageVector,
+    message: String,
+    modifier: Modifier = Modifier,
+    action: @Composable () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -87,5 +77,6 @@ fun EmptyState(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        action()
     }
 }

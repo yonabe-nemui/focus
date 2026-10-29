@@ -1,5 +1,4 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -25,7 +24,7 @@ kotlin {
             enable = true
         }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -35,20 +34,14 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     jvm()
-    
+
     js {
         browser()
         binaries.executable()
     }
-    
-    // @OptIn(ExperimentalWasmDsl::class)
-    // wasmJs {
-    //     browser()
-    //     binaries.executable()
-    // }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
@@ -60,16 +53,10 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.ktor.client.core)
             implementation(libs.compose.materialIconsExtended)
             implementation(projects.shared)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
-        }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
         }
         // iosMain・webMain は Kotlin のデフォルト階層テンプレートが自動で作成する
         iosMain.dependencies {

@@ -4,6 +4,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import app.focus.personal.model.RssItem
+import app.focus.personal.model.ThemeMode
+import app.focus.personal.model.ThemeSettings
 import app.focus.personal.ui.theme.FocusTheme
 
 // ── サンプルデータ ────────────────────────────────────────────────────────────
@@ -79,7 +81,7 @@ private fun FeedItemLongTextPreview() {
 @Preview
 @Composable
 private fun FeedItemDarkModePreview() {
-    FocusTheme(darkTheme = true) {
+    FocusTheme(settings = ThemeSettings(mode = ThemeMode.DARK)) {
         Surface {
             FeedItem(item = previewNews, onClick = {})
         }

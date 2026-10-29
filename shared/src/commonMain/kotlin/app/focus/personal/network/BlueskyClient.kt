@@ -1,10 +1,8 @@
 package app.focus.personal.network
 
-import app.focus.personal.model.BlueskyFeedViewPost
 import app.focus.personal.model.BlueskySearchResponse
 import app.focus.personal.model.BlueskySession
 import app.focus.personal.model.BlueskyTimelineResponse
-import app.focus.personal.model.MutedWord
 import io.github.aakira.napier.Napier
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -29,8 +27,8 @@ class BlueskyClient(private val client: HttpClient) {
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun createSession(
-        handle: String, 
-        appPassword: String, 
+        handle: String,
+        appPassword: String,
         authCode: String? = null
     ): BlueskySession {
         val response: HttpResponse = client.post("$baseUrl/com.atproto.server.createSession") {
@@ -80,28 +78,19 @@ class BlueskyClient(private val client: HttpClient) {
         }
     }
 
-    suspend fun getMutedWords(session: BlueskySession): List<MutedWord> {
+    /** アカウントに設定された BlueSky 公式ミュートワード(対象種別は区別せず本文に適用する)。 */
+    suspend fun getMutedWords(session: BlueskySession): List<String> {
         val response = client.get("$baseUrl/app.bsky.actor.getPreferences") {
             header("Authorization", "Bearer ${session.accessJwt}")
         }
-        val prefsString = response.body<String>()
-        val prefsJson = json.parseToJsonElement(prefsString).jsonObject
-        val prefsArray = prefsJson["preferences"]?.jsonArray ?: return emptyList()
-        
-        for (pref in prefsArray) {
-            val obj = pref.jsonObject
-            if (obj["\$type"]?.jsonPrimitive?.content == "app.bsky.actor.defs#mutedWordsPref") {
-                val words = obj["items"]?.jsonArray ?: continue
-                return words.map { 
-                    val wordObj = it.jsonObject
-                    MutedWord(
-                        value = wordObj["value"]?.jsonPrimitive?.content ?: "",
-                        targets = wordObj["targets"]?.jsonArray?.map { t -> t.jsonPrimitive.content } ?: listOf("content")
-                    )
-                }
-            }
-        }
-        return emptyList()
+        val prefs = json.parseToJsonElement(response.body<String>()).jsonObject["preferences"]?.jsonArray
+            ?: return emptyList()
+        val mutedWordsPref = prefs.firstOrNull {
+            it.jsonObject["\$type"]?.jsonPrimitive?.content == "app.bsky.actor.defs#mutedWordsPref"
+        } ?: return emptyList()
+        return mutedWordsPref.jsonObject["items"]?.jsonArray
+            ?.mapNotNull { it.jsonObject["value"]?.jsonPrimitive?.content }
+            .orEmpty()
     }
 
     suspend fun getTimeline(session: BlueskySession, limit: Int = 50, cursor: String? = null): BlueskyTimelineResponse {
